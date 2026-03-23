@@ -1,0 +1,33 @@
+version: "3.8"
+
+services:
+  n8n:
+    image: docker.n8n.io/n8nio/n8n:latest
+    restart: unless-stopped
+    ports:
+      - "${N8N_PORT:-5678}:5678"
+    environment:
+      - N8N_BASIC_AUTH_ACTIVE=true
+      - N8N_BASIC_AUTH_USER=${N8N_BASIC_AUTH_USER:-admin}
+      - N8N_BASIC_AUTH_PASSWORD=${N8N_BASIC_AUTH_PASSWORD}
+      - N8N_ENCRYPTION_KEY=${N8N_ENCRYPTION_KEY}
+      - WEBHOOK_URL=${WEBHOOK_URL:-http://localhost:5678}
+      - N8N_DIAGNOSTICS_ENABLED=false
+      # Pass through to n8n workflows
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - AI_MODEL=${AI_MODEL:-claude-sonnet-4-6}
+      - AI_MAX_TOKENS=${AI_MAX_TOKENS:-4096}
+      - CONFLUENCE_BASE_URL=${CONFLUENCE_BASE_URL}
+      - CONFLUENCE_SPACE_KEY=${CONFLUENCE_SPACE_KEY}
+      - JIRA_BASE_URL=${JIRA_BASE_URL}
+      - JIRA_PROJECT_KEY=${JIRA_PROJECT_KEY}
+      - JIRA_DEFAULT_PRIORITY=${JIRA_DEFAULT_PRIORITY:-Medium}
+      - JIRA_EPIC_ISSUE_TYPE=${JIRA_EPIC_ISSUE_TYPE:-Epic}
+      - JIRA_STORY_ISSUE_TYPE=${JIRA_STORY_ISSUE_TYPE:-Story}
+      - JIRA_SUBTASK_ISSUE_TYPE=${JIRA_SUBTASK_ISSUE_TYPE:-Sub-task}
+    volumes:
+      - n8n_data:/home/node/.n8n
+
+volumes:
+  n8n_data:

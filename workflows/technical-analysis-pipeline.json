@@ -1,0 +1,275 @@
+{
+  "name": "AI Technical Analysis → Confluence → Jira",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "analyze",
+        "options": {
+          "responseMode": "responseNode"
+        }
+      },
+      "id": "webhook-trigger",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "webhookId": "analyze"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "feature-desc",
+              "name": "featureDescription",
+              "value": "={{ $json.body.featureDescription }}",
+              "type": "string"
+            },
+            {
+              "id": "analysis-type",
+              "name": "analysisType",
+              "value": "={{ $json.body.analysisType || 'technical-analysis' }}",
+              "type": "string"
+            },
+            {
+              "id": "additional-context",
+              "name": "additionalContext",
+              "value": "={{ $json.body.additionalContext || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "create-jira",
+              "name": "createJiraTasks",
+              "value": "={{ $json.body.createJiraTasks !== false }}",
+              "type": "boolean"
+            },
+            {
+              "id": "confluence-parent",
+              "name": "confluenceParentPageId",
+              "value": "={{ $json.body.confluenceParentPageId || '' }}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "id": "set-variables",
+      "name": "Set Variables",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "x-api-key", "value": "={{ $env.ANTHROPIC_API_KEY }}" },
+            { "name": "anthropic-version", "value": "2023-06-01" },
+            { "name": "content-type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"{{ $env.AI_MODEL || 'claude-sonnet-4-6' }}\",\n  \"max_tokens\": {{ $env.AI_MAX_TOKENS || 4096 }},\n  \"messages\": [\n    {\n      \"role\": \"user\",\n      \"content\": \"You are a senior software architect performing technical analysis for a development team.\\n\\nGiven the following feature description, produce a detailed technical analysis as a JSON object.\\n\\n## Feature Description\\n{{ $json.featureDescription }}\\n\\n## Additional Context\\n{{ $json.additionalContext }}\\n\\n## Output Format\\n\\nRespond ONLY with valid JSON matching this schema:\\n\\n{\\n  \\\"title\\\": \\\"Short descriptive title\\\",\\n  \\\"summary\\\": \\\"2-3 sentence executive summary\\\",\\n  \\\"architecture\\\": {\\n    \\\"overview\\\": \\\"High-level architecture description\\\",\\n    \\\"components\\\": [{\\\"name\\\": \\\"...\\\", \\\"type\\\": \\\"frontend|backend|database|infrastructure\\\", \\\"description\\\": \\\"...\\\", \\\"changes\\\": \\\"...\\\"}],\\n    \\\"dataFlow\\\": \\\"Data flow description\\\"\\n  },\\n  \\\"apiContracts\\\": [{\\\"method\\\": \\\"GET|POST|PUT|DELETE\\\", \\\"path\\\": \\\"/api/...\\\", \\\"description\\\": \\\"...\\\", \\\"requestBody\\\": {}, \\\"responseBody\\\": {}, \\\"statusCodes\\\": [\\\"200 - OK\\\"]}],\\n  \\\"databaseChanges\\\": [{\\\"type\\\": \\\"new-table|alter-table\\\", \\\"entity\\\": \\\"...\\\", \\\"description\\\": \\\"...\\\", \\\"fields\\\": [{\\\"name\\\": \\\"...\\\", \\\"type\\\": \\\"...\\\", \\\"nullable\\\": false}]}],\\n  \\\"edgeCases\\\": [{\\\"scenario\\\": \\\"...\\\", \\\"impact\\\": \\\"low|medium|high\\\", \\\"mitigation\\\": \\\"...\\\"}],\\n  \\\"securityConsiderations\\\": [\\\"...\\\"],\\n  \\\"testingStrategy\\\": {\\\"unitTests\\\": [\\\"...\\\"], \\\"integrationTests\\\": [\\\"...\\\"], \\\"e2eTests\\\": [\\\"...\\\"]},\\n  \\\"tasks\\\": [{\\\"type\\\": \\\"epic|story|subtask\\\", \\\"summary\\\": \\\"...\\\", \\\"description\\\": \\\"...\\\", \\\"component\\\": \\\"frontend|backend|database|devops|testing\\\", \\\"estimate\\\": \\\"XS|S|M|L|XL\\\", \\\"priority\\\": \\\"Critical|High|Medium|Low\\\", \\\"acceptanceCriteria\\\": [\\\"Given X, when Y, then Z\\\"]}],\\n  \\\"estimatedComplexity\\\": \\\"low|medium|high\\\",\\n  \\\"suggestedApproach\\\": \\\"Recommended implementation order\\\"\\n}\\n\\nRules: Tasks should be 1-3 day work items. Include Gherkin acceptance criteria. Be specific, not generic.\"\n    }\n  ]\n}"
+      },
+      "id": "call-claude",
+      "name": "Call Claude API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract JSON from Claude's response\nconst response = $input.first().json;\nconst content = response.content[0].text;\n\n// Parse the JSON (handle markdown code fences if present)\nlet jsonStr = content;\nif (content.includes('```json')) {\n  jsonStr = content.split('```json')[1].split('```')[0].trim();\n} else if (content.includes('```')) {\n  jsonStr = content.split('```')[1].split('```')[0].trim();\n}\n\nlet analysis;\ntry {\n  analysis = JSON.parse(jsonStr);\n} catch (e) {\n  throw new Error(`Failed to parse AI response as JSON: ${e.message}\\n\\nRaw response: ${content.substring(0, 500)}`);\n}\n\n// Get variables from earlier node\nconst vars = $('Set Variables').first().json;\n\nreturn [{\n  json: {\n    analysis,\n    featureDescription: vars.featureDescription,\n    createJiraTasks: vars.createJiraTasks,\n    confluenceParentPageId: vars.confluenceParentPageId\n  }\n}];"
+      },
+      "id": "parse-response",
+      "name": "Parse AI Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Convert analysis JSON to Confluence-friendly HTML\nconst { analysis } = $input.first().json;\n\nlet html = '';\n\n// Summary\nhtml += `<h2>Summary</h2><p>${analysis.summary}</p>`;\n\n// Architecture\nhtml += `<h2>Architecture</h2>`;\nhtml += `<p>${analysis.architecture.overview}</p>`;\nhtml += `<h3>Components</h3>`;\nhtml += `<table><thead><tr><th>Component</th><th>Type</th><th>Description</th><th>Changes</th></tr></thead><tbody>`;\nfor (const c of analysis.architecture.components || []) {\n  html += `<tr><td><strong>${c.name}</strong></td><td><code>${c.type}</code></td><td>${c.description}</td><td>${c.changes}</td></tr>`;\n}\nhtml += `</tbody></table>`;\n\nif (analysis.architecture.dataFlow) {\n  html += `<h3>Data Flow</h3><p>${analysis.architecture.dataFlow}</p>`;\n}\n\n// API Contracts\nif (analysis.apiContracts?.length) {\n  html += `<h2>API Contracts</h2>`;\n  for (const api of analysis.apiContracts) {\n    html += `<h3><code>${api.method} ${api.path}</code></h3>`;\n    html += `<p>${api.description}</p>`;\n    if (api.requestBody && Object.keys(api.requestBody).length) {\n      html += `<p><strong>Request:</strong></p><ac:structured-macro ac:name=\"code\"><ac:parameter ac:name=\"language\">json</ac:parameter><ac:plain-text-body><![CDATA[${JSON.stringify(api.requestBody, null, 2)}]]></ac:plain-text-body></ac:structured-macro>`;\n    }\n    if (api.responseBody && Object.keys(api.responseBody).length) {\n      html += `<p><strong>Response:</strong></p><ac:structured-macro ac:name=\"code\"><ac:parameter ac:name=\"language\">json</ac:parameter><ac:plain-text-body><![CDATA[${JSON.stringify(api.responseBody, null, 2)}]]></ac:plain-text-body></ac:structured-macro>`;\n    }\n    if (api.statusCodes?.length) {\n      html += `<p><strong>Status Codes:</strong> ${api.statusCodes.join(', ')}</p>`;\n    }\n  }\n}\n\n// Database Changes\nif (analysis.databaseChanges?.length) {\n  html += `<h2>Database Changes</h2>`;\n  html += `<table><thead><tr><th>Type</th><th>Entity</th><th>Description</th></tr></thead><tbody>`;\n  for (const db of analysis.databaseChanges) {\n    html += `<tr><td><code>${db.type}</code></td><td><strong>${db.entity}</strong></td><td>${db.description}</td></tr>`;\n    if (db.fields?.length) {\n      html += `<tr><td colspan=\"3\"><table><thead><tr><th>Field</th><th>Type</th><th>Nullable</th><th>Description</th></tr></thead><tbody>`;\n      for (const f of db.fields) {\n        html += `<tr><td><code>${f.name}</code></td><td><code>${f.type}</code></td><td>${f.nullable ? 'Yes' : 'No'}</td><td>${f.description || ''}</td></tr>`;\n      }\n      html += `</tbody></table></td></tr>`;\n    }\n  }\n  html += `</tbody></table>`;\n}\n\n// Edge Cases\nif (analysis.edgeCases?.length) {\n  html += `<h2>Edge Cases</h2>`;\n  html += `<table><thead><tr><th>Scenario</th><th>Impact</th><th>Mitigation</th></tr></thead><tbody>`;\n  for (const ec of analysis.edgeCases) {\n    html += `<tr><td>${ec.scenario}</td><td><code>${ec.impact}</code></td><td>${ec.mitigation}</td></tr>`;\n  }\n  html += `</tbody></table>`;\n}\n\n// Security\nif (analysis.securityConsiderations?.length) {\n  html += `<h2>Security Considerations</h2><ul>`;\n  for (const s of analysis.securityConsiderations) {\n    html += `<li>${s}</li>`;\n  }\n  html += `</ul>`;\n}\n\n// Testing Strategy\nif (analysis.testingStrategy) {\n  html += `<h2>Testing Strategy</h2>`;\n  const ts = analysis.testingStrategy;\n  if (ts.unitTests?.length) {\n    html += `<h3>Unit Tests</h3><ul>${ts.unitTests.map(t => `<li>${t}</li>`).join('')}</ul>`;\n  }\n  if (ts.integrationTests?.length) {\n    html += `<h3>Integration Tests</h3><ul>${ts.integrationTests.map(t => `<li>${t}</li>`).join('')}</ul>`;\n  }\n  if (ts.e2eTests?.length) {\n    html += `<h3>E2E Tests</h3><ul>${ts.e2eTests.map(t => `<li>${t}</li>`).join('')}</ul>`;\n  }\n}\n\n// Tasks Summary\nif (analysis.tasks?.length) {\n  html += `<h2>Task Breakdown</h2>`;\n  html += `<table><thead><tr><th>Type</th><th>Summary</th><th>Component</th><th>Estimate</th><th>Priority</th></tr></thead><tbody>`;\n  for (const t of analysis.tasks) {\n    html += `<tr><td><code>${t.type}</code></td><td>${t.summary}</td><td><code>${t.component}</code></td><td>${t.estimate}</td><td>${t.priority}</td></tr>`;\n  }\n  html += `</tbody></table>`;\n}\n\n// Complexity & Approach\nhtml += `<h2>Overall</h2>`;\nhtml += `<p><strong>Estimated Complexity:</strong> ${analysis.estimatedComplexity}</p>`;\nhtml += `<p><strong>Suggested Approach:</strong> ${analysis.suggestedApproach}</p>`;\n\n// Metadata footer\nhtml += `<hr/><p><em>Generated by <a href=\"https://github.com/openmindednewby/ai-confluence-pipeline\">ai-confluence-pipeline</a> on ${new Date().toISOString().split('T')[0]}</em></p>`;\n\nreturn [{ json: { html, title: analysis.title, analysis: $input.first().json.analysis, createJiraTasks: $input.first().json.createJiraTasks, confluenceParentPageId: $input.first().json.confluenceParentPageId } }];"
+      },
+      "id": "format-confluence",
+      "name": "Format for Confluence",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1120, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.CONFLUENCE_BASE_URL }}/wiki/rest/api/content",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"type\": \"page\",\n  \"title\": \"{{ $json.title }} - Technical Analysis\",\n  \"space\": { \"key\": \"{{ $env.CONFLUENCE_SPACE_KEY }}\" },\n  {{ $json.confluenceParentPageId ? '\"ancestors\": [{\"id\": \"' + $json.confluenceParentPageId + '\"}],' : '' }}\n  \"body\": {\n    \"storage\": {\n      \"value\": {{ JSON.stringify($json.html) }},\n      \"representation\": \"storage\"\n    }\n  },\n  \"metadata\": {\n    \"labels\": [\n      { \"prefix\": \"global\", \"name\": \"technical-analysis\" },\n      { \"prefix\": \"global\", \"name\": \"ai-generated\" }\n    ]\n  }\n}"
+      },
+      "id": "create-confluence-page",
+      "name": "Create Confluence Page",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1340, 300],
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "confluence-auth",
+          "name": "Confluence Basic Auth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "check-jira",
+              "leftValue": "={{ $('Parse AI Response').first().json.createJiraTasks }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "check-create-jira",
+      "name": "Create Jira Tasks?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1560, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract tasks from analysis and prepare for Jira\nconst analysis = $('Parse AI Response').first().json.analysis;\nconst confluencePage = $('Create Confluence Page').first().json;\nconst confluenceUrl = confluencePage._links?.base + confluencePage._links?.webui;\n\nconst tasks = analysis.tasks || [];\n\n// Map estimates to story points\nconst estimateToPoints = { 'XS': 1, 'S': 2, 'M': 3, 'L': 5, 'XL': 8 };\n\nreturn tasks.map(task => ({\n  json: {\n    task,\n    storyPoints: estimateToPoints[task.estimate] || 3,\n    confluenceUrl,\n    pageTitle: analysis.title\n  }\n}));"
+      },
+      "id": "prepare-jira-tasks",
+      "name": "Prepare Jira Tasks",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1780, 200]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.JIRA_BASE_URL }}/rest/api/3/issue",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"fields\": {\n    \"project\": { \"key\": \"{{ $env.JIRA_PROJECT_KEY }}\" },\n    \"summary\": \"{{ $json.task.summary }}\",\n    \"description\": {\n      \"type\": \"doc\",\n      \"version\": 1,\n      \"content\": [\n        {\n          \"type\": \"paragraph\",\n          \"content\": [{ \"type\": \"text\", \"text\": {{ JSON.stringify($json.task.description) }} }]\n        },\n        {\n          \"type\": \"heading\",\n          \"attrs\": { \"level\": 3 },\n          \"content\": [{ \"type\": \"text\", \"text\": \"Acceptance Criteria\" }]\n        },\n        {\n          \"type\": \"bulletList\",\n          \"content\": {{ JSON.stringify(($json.task.acceptanceCriteria || []).map(ac => ({ \"type\": \"listItem\", \"content\": [{ \"type\": \"paragraph\", \"content\": [{ \"type\": \"text\", \"text\": ac }] }] }))) }}\n        },\n        {\n          \"type\": \"paragraph\",\n          \"content\": [\n            { \"type\": \"text\", \"text\": \"Technical Analysis: \" },\n            { \"type\": \"text\", \"text\": {{ JSON.stringify($json.pageTitle) }}, \"marks\": [{ \"type\": \"link\", \"attrs\": { \"href\": {{ JSON.stringify($json.confluenceUrl || '') }} } }] }\n          ]\n        }\n      ]\n    },\n    \"issuetype\": { \"name\": \"{{ $json.task.type === 'epic' ? ($env.JIRA_EPIC_ISSUE_TYPE || 'Epic') : $json.task.type === 'subtask' ? ($env.JIRA_SUBTASK_ISSUE_TYPE || 'Sub-task') : ($env.JIRA_STORY_ISSUE_TYPE || 'Story') }}\" },\n    \"priority\": { \"name\": \"{{ $json.task.priority || $env.JIRA_DEFAULT_PRIORITY || 'Medium' }}\" },\n    \"labels\": [\"ai-generated\", \"{{ $json.task.component }}\"]\n  }\n}"
+      },
+      "id": "create-jira-issue",
+      "name": "Create Jira Issue",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2000, 200],
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "jira-auth",
+          "name": "Jira Basic Auth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Aggregate results\nconst confluencePage = $('Create Confluence Page').first().json;\nconst analysis = $('Parse AI Response').first().json.analysis;\nconst jiraIssues = $input.all().map(item => item.json);\n\nreturn [{\n  json: {\n    success: true,\n    confluencePage: {\n      id: confluencePage.id,\n      title: confluencePage.title,\n      url: (confluencePage._links?.base || '') + (confluencePage._links?.webui || '')\n    },\n    jiraIssues: jiraIssues.map(issue => ({\n      key: issue.key,\n      summary: issue.fields?.summary,\n      url: `${process.env.JIRA_BASE_URL}/browse/${issue.key}`\n    })),\n    taskCount: jiraIssues.length,\n    complexity: analysis.estimatedComplexity\n  }\n}];"
+      },
+      "id": "aggregate-results",
+      "name": "Aggregate Results",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2220, 200]
+    },
+    {
+      "parameters": {
+        "jsCode": "// No Jira tasks — just return Confluence result\nconst confluencePage = $('Create Confluence Page').first().json;\nconst analysis = $('Parse AI Response').first().json.analysis;\n\nreturn [{\n  json: {\n    success: true,\n    confluencePage: {\n      id: confluencePage.id,\n      title: confluencePage.title,\n      url: (confluencePage._links?.base || '') + (confluencePage._links?.webui || '')\n    },\n    jiraIssues: [],\n    taskCount: 0,\n    complexity: analysis.estimatedComplexity,\n    note: 'Jira task creation was skipped (createJiraTasks=false)'\n  }\n}];"
+      },
+      "id": "skip-jira-result",
+      "name": "Confluence Only Result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1780, 420]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}"
+      },
+      "id": "respond-webhook",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [2440, 300]
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {
+      "main": [[{ "node": "Set Variables", "type": "main", "index": 0 }]]
+    },
+    "Set Variables": {
+      "main": [[{ "node": "Call Claude API", "type": "main", "index": 0 }]]
+    },
+    "Call Claude API": {
+      "main": [[{ "node": "Parse AI Response", "type": "main", "index": 0 }]]
+    },
+    "Parse AI Response": {
+      "main": [[{ "node": "Format for Confluence", "type": "main", "index": 0 }]]
+    },
+    "Format for Confluence": {
+      "main": [[{ "node": "Create Confluence Page", "type": "main", "index": 0 }]]
+    },
+    "Create Confluence Page": {
+      "main": [[{ "node": "Create Jira Tasks?", "type": "main", "index": 0 }]]
+    },
+    "Create Jira Tasks?": {
+      "main": [
+        [{ "node": "Prepare Jira Tasks", "type": "main", "index": 0 }],
+        [{ "node": "Confluence Only Result", "type": "main", "index": 0 }]
+      ]
+    },
+    "Prepare Jira Tasks": {
+      "main": [[{ "node": "Create Jira Issue", "type": "main", "index": 0 }]]
+    },
+    "Create Jira Issue": {
+      "main": [[{ "node": "Aggregate Results", "type": "main", "index": 0 }]]
+    },
+    "Aggregate Results": {
+      "main": [[{ "node": "Respond to Webhook", "type": "main", "index": 0 }]]
+    },
+    "Confluence Only Result": {
+      "main": [[{ "node": "Respond to Webhook", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": [
+    { "name": "ai-pipeline" },
+    { "name": "technical-analysis" }
+  ]
+}
