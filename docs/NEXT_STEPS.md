@@ -6,7 +6,9 @@ Turn this from a single workflow into a **complete tech lead toolkit** — a tem
 
 ---
 
-## Phase 1: Template Registry (Current Priority)
+## Phase 1: Template Registry — DONE
+
+> **Status**: Complete. 13 templates implemented, registry + schema in place, team profiles added.
 
 ### The Core Idea
 
@@ -16,6 +18,8 @@ Not every scenario needs the same output. A new feature needs a full Confluence 
 
 ### Scenario Matrix
 
+Legend: Implemented | *Planned*
+
 | Scenario | Confluence Page | Jira Tickets | Typical Output |
 |----------|:-:|:-:|----------------|
 | New feature | Yes | Epic + Stories | Architecture, APIs, DB, edge cases, tasks |
@@ -24,36 +28,40 @@ Not every scenario needs the same output. A new feature needs a full Confluence 
 | API breaking change | Yes | Stories | Contract diff, consumer impact, migration guide |
 | Performance optimization | Yes | Stories | Bottleneck analysis, benchmarks, fix tasks |
 | Security audit | Yes | Stories (priority: High) | Vulnerability list, CVSS scores, remediation |
-| Infrastructure change | Yes | Stories | Topology changes, cost impact, runbook |
+| *Infrastructure change* | *Yes* | *Stories* | *Topology changes, cost impact, runbook* |
 | Architecture Decision Record | Yes | No | Options, decision, consequences |
 | Post-mortem / incident report | Yes | Follow-up Stories | Timeline, root cause, action items |
 | Bug fix | No | Story or Bug ticket | Root cause, fix approach, test plan |
-| Small refactor | No | Story | What to change, why, acceptance criteria |
+| *Small refactor* | *No* | *Story* | *What to change, why, acceptance criteria* |
 | Dependency update | No | Story + Subtasks | What's changing, breaking changes, test plan |
-| Config change | No | Task | What, where, rollback steps |
+| *Config change* | *No* | *Task* | *What, where, rollback steps* |
 | Quick enhancement | No | Story | Requirements, acceptance criteria |
 | Tech debt item | No | Story | Current state, desired state, approach |
-| Onboarding guide | Yes | No | Setup steps, architecture overview, key contacts |
+| *Onboarding guide* | *Yes* | *No* | *Setup steps, architecture overview, key contacts* |
 | Runbook | Yes | No | Step-by-step operational procedures |
-| Sprint retrospective summary | Yes | Action item Tasks | What worked, what didn't, action items |
+| *Sprint retrospective summary* | *Yes* | *Action item Tasks* | *What worked, what didn't, action items* |
 
 ### Template File Structure
+
+Existing files shown normally. *Planned templates in italics.*
 
 ```
 templates/
 ├── registry.json                    # Master list of all templates
+├── registry.schema.json             # JSON Schema for registry validation
 ├── confluence-only/
 │   ├── adr.md                       # Architecture Decision Record
 │   ├── post-mortem.md               # Incident post-mortem
-│   ├── onboarding-guide.md          # Team onboarding
-│   └── runbook.md                   # Operational runbook
+│   ├── runbook.md                   # Operational runbook
+│   ├── (onboarding-guide.md)        # Planned: Team onboarding
+│   └── (retro-summary.md)          # Planned: Sprint retrospective
 ├── jira-only/
 │   ├── bug-fix.md                   # Bug ticket
-│   ├── small-refactor.md            # Quick refactor
 │   ├── dependency-update.md         # Dep update
-│   ├── config-change.md             # Config change
 │   ├── quick-enhancement.md         # Small feature
-│   └── tech-debt.md                 # Tech debt item
+│   ├── tech-debt.md                 # Tech debt item
+│   ├── (small-refactor.md)          # Planned: Quick refactor
+│   └── (config-change.md)           # Planned: Config change
 └── full-pipeline/
     ├── new-feature.md               # Feature (current default)
     ├── tech-migration.md            # Stack migration
@@ -61,7 +69,7 @@ templates/
     ├── api-breaking-change.md       # API versioning
     ├── performance-optimization.md  # Perf work
     ├── security-audit.md            # Security findings
-    └── infrastructure-change.md     # Infra changes
+    └── (infrastructure-change.md)   # Planned: Infra changes
 ```
 
 ### Registry Schema
@@ -251,25 +259,9 @@ AI auto-detects the best template based on the description:
 ./scripts/analyze-github-issues.sh --repo org/repo --label "needs-analysis"
 ```
 
-### Team Context Profiles
-Store team-specific context that gets injected into every prompt:
-```json
-{
-  "team": "Platform",
-  "stack": {
-    "backend": ".NET 9, FastEndpoints, PostgreSQL, RabbitMQ",
-    "frontend": "React Native, Expo, TypeScript",
-    "testing": "Jest (unit), Playwright (E2E)",
-    "infra": "Docker, Kubernetes, GitHub Actions"
-  },
-  "conventions": {
-    "api": "RESTful, versioned (/api/v1/...)",
-    "branching": "trunk-based with short-lived feature branches",
-    "estimation": "T-shirt sizes (XS/S/M/L/XL)"
-  },
-  "teamSize": "3 backend, 2 frontend, 1 QA"
-}
-```
+### Team Context Profiles — DONE
+
+> Profile schema and example already exist in `team-profiles/`. Next step: wire profile injection into the n8n workflow so the team context is auto-included in every AI prompt.
 
 ### Notification Integrations
 - **Slack**: Post summary when analysis is complete
@@ -331,21 +323,23 @@ Simple web UI showing:
 
 ## Implementation Priority
 
-| Priority | Feature | Effort | Impact |
-|----------|---------|--------|--------|
-| 1 | Template registry + 5 core templates | M | High |
-| 2 | Confluence page templates (3 designs) | M | High |
-| 3 | Jira structure templates | S | High |
-| 4 | Smart template auto-selection | S | Medium |
-| 5 | Team context profiles | S | Medium |
-| 6 | Batch processing | M | Medium |
-| 7 | Slack notifications | S | Medium |
-| 8 | Confluence page updates | M | Medium |
-| 9 | Approval workflow | L | Medium |
-| 10 | CLI tool | L | High |
-| 11 | GitHub Action | M | Medium |
-| 12 | Estimation calibration | L | Low |
-| 13 | Dashboard | XL | Low |
+| Priority | Feature | Effort | Impact | Status |
+|----------|---------|--------|--------|--------|
+| ~~1~~ | ~~Template registry + 13 templates~~ | ~~M~~ | ~~High~~ | **Done** |
+| ~~2~~ | ~~Team context profiles~~ | ~~S~~ | ~~Medium~~ | **Done** |
+| 3 | Confluence page templates (3 designs) | M | High | Next |
+| 4 | Jira structure templates (wire into n8n) | S | High | Next |
+| 5 | Template routing in n8n (read registry, route output) | M | High | Next |
+| 6 | Smart template auto-selection | S | Medium | |
+| 7 | Remaining templates (5 planned) | S | Medium | |
+| 8 | Batch processing | M | Medium | |
+| 9 | Slack notifications | S | Medium | |
+| 10 | Confluence page updates (not just create) | M | Medium | |
+| 11 | Approval workflow | L | Medium | |
+| 12 | CLI tool | L | High | |
+| 13 | GitHub Action | M | Medium | |
+| 14 | Estimation calibration | L | Low | |
+| 15 | Dashboard | XL | Low | |
 
 ---
 

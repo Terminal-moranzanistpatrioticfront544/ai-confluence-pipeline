@@ -100,9 +100,9 @@ Not every scenario needs the same output. The template registry routes each type
 | [Tech Debt](templates/jira-only/tech-debt.md) | Tech debt backlog items | Single Story |
 | [Quick Enhancement](templates/jira-only/quick-enhancement.md) | Small improvements (<1 day) | Single Story |
 
-### Legacy Prompts
+### Active n8n Prompts
 
-The original prompts in `prompts/` still work and are used by the current n8n workflow:
+The prompts in `prompts/` are what the current n8n workflow uses. The templates above are the next-gen format (same concepts, more structured):
 
 | Template | Use Case |
 |----------|----------|
@@ -142,7 +142,9 @@ Inject your team's tech stack, conventions, and project management config into e
 cp team-profiles/example.json team-profiles/my-team.json
 ```
 
-The profile includes your stack, API conventions, estimation scales, Jira config, Confluence spaces, and service inventory. See [team-profiles/example.json](team-profiles/example.json) for the full structure.
+The profile includes your stack, API conventions, estimation scales, Jira config, Confluence spaces, and service inventory. See [team-profiles/example.json](team-profiles/example.json) for the full structure and [team-profiles/profile.schema.json](team-profiles/profile.schema.json) for the schema.
+
+> **Status:** Profile schema and examples are ready. Automatic injection into n8n prompts is the next development step — for now, copy relevant sections from your profile into the `additionalContext` field when triggering.
 
 ## Customization
 
@@ -180,22 +182,25 @@ Trigger the webhook from your CI — e.g., when a specific label is added to a G
 
 ## Roadmap
 
-See [docs/NEXT_STEPS.md](docs/NEXT_STEPS.md) for the full roadmap. Highlights:
+See [docs/NEXT_STEPS.md](docs/NEXT_STEPS.md) for the full roadmap.
 
-- **Template-driven routing** — auto-select Confluence, Jira, or both based on template type
-- **Smart template selection** — AI detects the best template from the description
-- **Team context profiles** — inject your tech stack into every prompt
-- **Confluence page templates** — polished layouts with macros, panels, and TOC
-- **Jira structures** — epic-with-stories, phased-epics, story-with-subtasks
-- **Approval workflow** — draft → review → create tickets
-- **Batch processing** — analyze a backlog of features from CSV or GitHub Issues
+**Done:**
+- 13 prompt templates across 3 categories (full-pipeline, confluence-only, jira-only)
+- Template registry with JSON Schema validation
+- Team context profiles with schema and example
+
+**Next up:**
+- **Template routing in n8n** — wire the registry so `--template` flag selects the right prompt and output routing
+- **Confluence page templates** — polished layouts with macros, panels, and TOC per template type
+- **Jira structure support** — epic-with-stories, phased-epics, story-with-subtasks in n8n
+- **Smart template selection** — AI auto-detects the best template from the description
 - **CLI tool** — `acp analyze --template new-feature "Add notifications"`
 
 ## Contributing
 
-Contributions welcome. The [template registry](templates/registry.json) is the easiest place to start — even adding a single new template helps.
+Contributions welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for the full guide.
 
-See [docs/NEXT_STEPS.md](docs/NEXT_STEPS.md) for the priority list, and [docs/CUSTOMIZATION.md](docs/CUSTOMIZATION.md) for how templates work.
+The [template registry](templates/registry.json) is the easiest place to start — even adding a single new template helps. See [docs/NEXT_STEPS.md](docs/NEXT_STEPS.md) for the priority list and [docs/CUSTOMIZATION.md](docs/CUSTOMIZATION.md) for how templates work.
 
 ## License
 

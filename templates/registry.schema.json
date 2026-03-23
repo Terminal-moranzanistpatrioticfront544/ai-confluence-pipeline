@@ -1,0 +1,94 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Template Registry",
+  "description": "Master list of all analysis templates with output routing configuration",
+  "type": "object",
+  "required": ["version", "templates"],
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "version": {
+      "type": "string",
+      "description": "Semantic version of the registry format"
+    },
+    "templates": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "name", "description", "category", "prompt", "output"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Unique template identifier (kebab-case)",
+            "pattern": "^[a-z0-9-]+$"
+          },
+          "name": {
+            "type": "string",
+            "description": "Human-readable template name"
+          },
+          "description": {
+            "type": "string",
+            "description": "One-line description of what this template produces"
+          },
+          "category": {
+            "type": "string",
+            "enum": ["full-pipeline", "confluence-only", "jira-only"],
+            "description": "Output routing category"
+          },
+          "prompt": {
+            "type": "string",
+            "description": "Path to the prompt template file (relative to repo root)"
+          },
+          "output": {
+            "type": "object",
+            "required": ["confluence", "jira"],
+            "properties": {
+              "confluence": {
+                "type": "boolean",
+                "description": "Whether to create a Confluence page"
+              },
+              "jira": {
+                "type": "boolean",
+                "description": "Whether to create Jira tickets"
+              },
+              "confluenceTemplate": {
+                "type": "string",
+                "description": "Confluence page format template to use",
+                "enum": ["standard-analysis", "migration-plan", "adr", "post-mortem", "runbook"]
+              },
+              "jiraStructure": {
+                "type": "string",
+                "description": "How Jira tickets are structured",
+                "enum": ["single-ticket", "epic-with-stories", "phased-epics", "story-with-subtasks"]
+              },
+              "jiraIssueType": {
+                "type": "string",
+                "description": "Default Jira issue type (for single-ticket structure)"
+              },
+              "confluenceLabels": {
+                "type": "array",
+                "items": { "type": "string" },
+                "description": "Labels applied to the Confluence page"
+              },
+              "jiraLabels": {
+                "type": "array",
+                "items": { "type": "string" },
+                "description": "Labels applied to Jira tickets"
+              },
+              "confluenceParentPage": {
+                "type": "string",
+                "description": "Parent page title in Confluence (for organized nesting)"
+              },
+              "defaultPriority": {
+                "type": "string",
+                "enum": ["Critical", "High", "Medium", "Low"],
+                "description": "Default priority for created Jira tickets"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

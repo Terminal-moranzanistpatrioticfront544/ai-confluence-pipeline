@@ -1,16 +1,20 @@
 # Customization Guide
 
-## Prompt Templates
+## Template System
 
-The `prompts/` directory contains templates for different analysis types:
+Templates live in `templates/` and are organized into three categories based on where output goes:
 
-| Template | Use Case |
-|----------|----------|
-| `technical-analysis.md` | New features — architecture, APIs, tasks |
-| `bug-analysis.md` | Bug reports — root cause, fix strategy, tasks |
-| `spike-analysis.md` | Research spikes — options comparison, PoC plan |
+| Directory | Output | Use Case |
+|-----------|--------|----------|
+| `templates/full-pipeline/` | Confluence page + Jira tickets | Features, migrations, refactors, audits |
+| `templates/confluence-only/` | Confluence page only | ADRs, post-mortems, runbooks |
+| `templates/jira-only/` | Jira tickets only | Bugs, tech debt, quick enhancements |
 
-### Writing Your Own Prompts
+All templates are registered in [`templates/registry.json`](../templates/registry.json), which defines the output routing (labels, Jira structure, priorities). See [`templates/registry.schema.json`](../templates/registry.schema.json) for the full schema.
+
+> **Note:** The current n8n workflow uses the original prompts in `prompts/`. The new template system in `templates/` is the next-gen format — wiring it into n8n is the next development priority (see [NEXT_STEPS.md](NEXT_STEPS.md)).
+
+### Writing Your Own Templates
 
 The key to good output is **structured JSON schemas**. Always:
 
@@ -18,16 +22,26 @@ The key to good output is **structured JSON schemas**. Always:
 2. Use `Respond ONLY with valid JSON` to prevent prose
 3. Include field-level descriptions so the AI understands what each field means
 4. Provide examples of realistic values (not just "string")
+5. End with a numbered `## Rules` section to constrain the output
 
-### Injecting Team Context
+See [CONTRIBUTING.md](../CONTRIBUTING.md) for the step-by-step guide to adding new templates.
 
-Add a "System Context" section to your prompts with:
-- Your tech stack (languages, frameworks, databases)
-- Architecture patterns you follow (microservices, monolith, CQRS)
-- Naming conventions (REST paths, database tables, Jira labels)
-- Team size and skill distribution
+## Team Context Profiles
 
-Example:
+Instead of manually adding context to each prompt, create a team profile in `team-profiles/`:
+
+```bash
+cp team-profiles/example.json team-profiles/my-team.json
+```
+
+The profile includes your tech stack, API conventions, estimation scales, Jira/Confluence config, and service inventory. Templates reference it via `{{teamContext}}`.
+
+See [`team-profiles/example.json`](../team-profiles/example.json) for the full structure and [`team-profiles/profile.schema.json`](../team-profiles/profile.schema.json) for the schema.
+
+### Manual Context Injection (Alternative)
+
+If you prefer not to use profiles, add a "System Context" section directly to your prompts:
+
 ```
 ## System Context
 - Backend: .NET 9, FastEndpoints, PostgreSQL, RabbitMQ
@@ -37,6 +51,16 @@ Example:
 - Testing: Jest (unit), Playwright (E2E)
 - Team: 3 backend, 2 frontend, 1 QA
 ```
+
+### Legacy Prompts
+
+The original prompts in `prompts/` are used by the current n8n workflow:
+
+| Template | Use Case |
+|----------|----------|
+| `technical-analysis.md` | New features — architecture, APIs, tasks |
+| `bug-analysis.md` | Bug reports — root cause, fix strategy, tasks |
+| `spike-analysis.md` | Research spikes — options comparison, PoC plan |
 
 ## Confluence Page Format
 

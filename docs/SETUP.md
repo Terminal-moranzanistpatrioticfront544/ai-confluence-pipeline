@@ -44,10 +44,16 @@ Open http://localhost:5678 and log in with the credentials from `.env`.
 
 1. In n8n, go to **Workflows** → **Import from file**
 2. Select `workflows/technical-analysis-pipeline.json`
-3. Configure credentials:
-   - Create "HTTP Basic Auth" credential for Confluence (email + API token)
-   - Create "HTTP Basic Auth" credential for Jira (email + API token)
-4. Activate the workflow
+3. Configure credentials in n8n:
+   - Go to **Settings** → **Credentials** → **Add Credential**
+   - Create **"Confluence Basic Auth"** (type: HTTP Basic Auth):
+     - User: your Atlassian email
+     - Password: your Confluence API token (from step 1)
+   - Create **"Jira Basic Auth"** (type: HTTP Basic Auth):
+     - User: your Atlassian email
+     - Password: your Jira API token (same token works if same Atlassian instance)
+   - Open the workflow and assign these credentials to the "Create Confluence Page" and "Create Jira Issue" nodes
+4. Activate the workflow (toggle in top-right)
 
 ## 5. Test It
 
@@ -59,11 +65,20 @@ Open http://localhost:5678 and log in with the credentials from `.env`.
 .\scripts\trigger-analysis.ps1 -Description "Add user notification preferences with email and push channels"
 ```
 
-## 6. Customize
+## 6. Set Up Team Profile (Optional)
 
-- Edit prompts in `prompts/` to match your team's conventions
-- Modify the "Format for Confluence" node to match your page templates
-- Add labels, components, or custom fields to the Jira issue creation
+```bash
+cp team-profiles/example.json team-profiles/my-team.json
+```
+
+Edit `my-team.json` with your tech stack, conventions, Jira project key, and Confluence space. This context gets injected into prompts for more specific output. See [team-profiles/example.json](../team-profiles/example.json) for what each field does.
+
+## 7. Customize
+
+- **Prompts**: Edit `prompts/` to match your team's conventions (used by the current n8n workflow)
+- **Templates**: Browse `templates/` for 13 scenario-specific prompt templates (new-feature, bug-fix, ADR, etc.) — see [CUSTOMIZATION.md](CUSTOMIZATION.md) for details
+- **Confluence**: Modify the "Format for Confluence" node to match your page templates
+- **Jira**: Add labels, components, or custom fields to the "Create Jira Issue" node
 
 ## Troubleshooting
 
