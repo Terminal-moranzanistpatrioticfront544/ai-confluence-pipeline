@@ -68,13 +68,47 @@ docker compose up -d
 
 **Orchestrated by n8n** (self-hosted, open-source workflow automation).
 
-## Included Prompt Templates
+## Template Registry
 
-| Template | Use Case | Output |
-|----------|----------|--------|
-| [Technical Analysis](prompts/technical-analysis.md) | New features | Architecture, APIs, DB, tasks |
-| [Bug Analysis](prompts/bug-analysis.md) | Bug reports | Root cause, fix plan, tasks |
-| [Spike Analysis](prompts/spike-analysis.md) | Research/evaluation | Options matrix, PoC plan, tasks |
+Not every scenario needs the same output. The template registry routes each type of work to the right destination.
+
+### Full Pipeline (Confluence + Jira)
+
+| Template | Use Case | Jira Structure |
+|----------|----------|----------------|
+| [New Feature](templates/full-pipeline/new-feature.md) | Feature implementation | Epic + Stories |
+| [Tech Migration](templates/full-pipeline/tech-migration.md) | Stack/library migration | Phased Epics |
+| [Large Refactoring](templates/full-pipeline/large-refactoring.md) | Major code restructuring | Epic + Stories |
+| API Breaking Change | Contract changes with consumer impact | Epic + Stories |
+| Security Audit | Vulnerability findings + remediation | Epic + Stories |
+| Performance Optimization | Bottleneck analysis + fix plan | Epic + Stories |
+
+### Confluence Only (Documentation, no tickets)
+
+| Template | Use Case |
+|----------|----------|
+| [ADR](templates/confluence-only/adr.md) | Architecture Decision Records |
+| [Post-Mortem](templates/confluence-only/post-mortem.md) | Incident reports (blameless) |
+| [Runbook](templates/confluence-only/runbook.md) | Operational procedures for on-call |
+
+### Jira Only (Quick tickets, no docs)
+
+| Template | Use Case | Jira Structure |
+|----------|----------|----------------|
+| [Bug Fix](templates/jira-only/bug-fix.md) | Bug report → ticket | Single Bug ticket |
+| [Dependency Update](templates/jira-only/dependency-update.md) | Package upgrades | Story + Subtasks |
+| [Tech Debt](templates/jira-only/tech-debt.md) | Tech debt backlog items | Single Story |
+| [Quick Enhancement](templates/jira-only/quick-enhancement.md) | Small improvements (<1 day) | Single Story |
+
+### Legacy Prompts
+
+The original prompts in `prompts/` still work and are used by the current n8n workflow:
+
+| Template | Use Case |
+|----------|----------|
+| [Technical Analysis](prompts/technical-analysis.md) | New features (original format) |
+| [Bug Analysis](prompts/bug-analysis.md) | Bug reports (original format) |
+| [Spike Analysis](prompts/spike-analysis.md) | Research/evaluation (original format) |
 
 ## Trigger Methods
 
@@ -133,17 +167,24 @@ Yes. Install n8n globally with `npm install -g n8n`, then `n8n start`. Import th
 **How do I add this to a CI/CD pipeline?**
 Trigger the webhook from your CI — e.g., when a specific label is added to a GitHub issue, a GitHub Action calls the webhook with the issue body.
 
+## Roadmap
+
+See [docs/NEXT_STEPS.md](docs/NEXT_STEPS.md) for the full roadmap. Highlights:
+
+- **Template-driven routing** — auto-select Confluence, Jira, or both based on template type
+- **Smart template selection** — AI detects the best template from the description
+- **Team context profiles** — inject your tech stack into every prompt
+- **Confluence page templates** — polished layouts with macros, panels, and TOC
+- **Jira structures** — epic-with-stories, phased-epics, story-with-subtasks
+- **Approval workflow** — draft → review → create tickets
+- **Batch processing** — analyze a backlog of features from CSV or GitHub Issues
+- **CLI tool** — `acp analyze --template new-feature "Add notifications"`
+
 ## Contributing
 
-Contributions welcome. Some ideas:
+Contributions welcome. The [template registry](templates/registry.json) is the easiest place to start — even adding a single new template helps.
 
-- [ ] Additional prompt templates (API migration, performance audit, etc.)
-- [ ] OpenAI node variant (pre-configured)
-- [ ] GitHub Issues integration (alternative to Jira)
-- [ ] Linear integration
-- [ ] Confluence page templates with better formatting
-- [ ] n8n credential setup script
-- [ ] Mermaid diagram generation in Confluence
+See [docs/NEXT_STEPS.md](docs/NEXT_STEPS.md) for the priority list, and [docs/CUSTOMIZATION.md](docs/CUSTOMIZATION.md) for how templates work.
 
 ## License
 

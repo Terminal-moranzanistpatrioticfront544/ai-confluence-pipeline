@@ -1,0 +1,204 @@
+{
+  "$schema": "./registry.schema.json",
+  "version": "1.0.0",
+  "templates": [
+    {
+      "id": "new-feature",
+      "name": "New Feature",
+      "description": "Full technical analysis for a new feature — architecture, APIs, database, edge cases, and task breakdown",
+      "category": "full-pipeline",
+      "prompt": "templates/full-pipeline/new-feature.md",
+      "output": {
+        "confluence": true,
+        "jira": true,
+        "confluenceTemplate": "standard-analysis",
+        "jiraStructure": "epic-with-stories",
+        "confluenceLabels": ["technical-analysis", "feature"],
+        "jiraLabels": ["feature"],
+        "defaultPriority": "Medium"
+      }
+    },
+    {
+      "id": "tech-migration",
+      "name": "Tech Stack Migration",
+      "description": "Phased migration plan with impact analysis, rollback strategy, and parallel-run approach",
+      "category": "full-pipeline",
+      "prompt": "templates/full-pipeline/tech-migration.md",
+      "output": {
+        "confluence": true,
+        "jira": true,
+        "confluenceTemplate": "migration-plan",
+        "jiraStructure": "phased-epics",
+        "confluenceLabels": ["technical-analysis", "migration"],
+        "jiraLabels": ["migration"],
+        "defaultPriority": "High"
+      }
+    },
+    {
+      "id": "large-refactoring",
+      "name": "Large Refactoring",
+      "description": "Before/after architecture analysis with incremental migration steps",
+      "category": "full-pipeline",
+      "prompt": "templates/full-pipeline/large-refactoring.md",
+      "output": {
+        "confluence": true,
+        "jira": true,
+        "confluenceTemplate": "standard-analysis",
+        "jiraStructure": "epic-with-stories",
+        "confluenceLabels": ["technical-analysis", "refactoring"],
+        "jiraLabels": ["refactoring"],
+        "defaultPriority": "Medium"
+      }
+    },
+    {
+      "id": "api-breaking-change",
+      "name": "API Breaking Change",
+      "description": "Contract diff, consumer impact analysis, and versioned migration guide",
+      "category": "full-pipeline",
+      "prompt": "templates/full-pipeline/api-breaking-change.md",
+      "output": {
+        "confluence": true,
+        "jira": true,
+        "confluenceTemplate": "standard-analysis",
+        "jiraStructure": "epic-with-stories",
+        "confluenceLabels": ["technical-analysis", "api", "breaking-change"],
+        "jiraLabels": ["api", "breaking-change"],
+        "defaultPriority": "High"
+      }
+    },
+    {
+      "id": "security-audit",
+      "name": "Security Audit Findings",
+      "description": "Vulnerability report with CVSS-style scoring and remediation tasks",
+      "category": "full-pipeline",
+      "prompt": "templates/full-pipeline/security-audit.md",
+      "output": {
+        "confluence": true,
+        "jira": true,
+        "confluenceTemplate": "standard-analysis",
+        "jiraStructure": "epic-with-stories",
+        "confluenceLabels": ["security", "audit"],
+        "jiraLabels": ["security"],
+        "defaultPriority": "Critical"
+      }
+    },
+    {
+      "id": "performance-optimization",
+      "name": "Performance Optimization",
+      "description": "Bottleneck analysis, benchmark targets, and optimization tasks",
+      "category": "full-pipeline",
+      "prompt": "templates/full-pipeline/performance-optimization.md",
+      "output": {
+        "confluence": true,
+        "jira": true,
+        "confluenceTemplate": "standard-analysis",
+        "jiraStructure": "epic-with-stories",
+        "confluenceLabels": ["technical-analysis", "performance"],
+        "jiraLabels": ["performance"],
+        "defaultPriority": "High"
+      }
+    },
+    {
+      "id": "adr",
+      "name": "Architecture Decision Record",
+      "description": "Document an architectural decision with options analysis and rationale — no tickets needed",
+      "category": "confluence-only",
+      "prompt": "templates/confluence-only/adr.md",
+      "output": {
+        "confluence": true,
+        "jira": false,
+        "confluenceTemplate": "adr",
+        "confluenceLabels": ["adr", "architecture"],
+        "confluenceParentPage": "Architecture Decisions"
+      }
+    },
+    {
+      "id": "post-mortem",
+      "name": "Post-Mortem / Incident Report",
+      "description": "Structured incident analysis with timeline, root cause, and follow-up action items",
+      "category": "confluence-only",
+      "prompt": "templates/confluence-only/post-mortem.md",
+      "output": {
+        "confluence": true,
+        "jira": false,
+        "confluenceTemplate": "post-mortem",
+        "confluenceLabels": ["post-mortem", "incident"],
+        "confluenceParentPage": "Incident Reports"
+      }
+    },
+    {
+      "id": "runbook",
+      "name": "Operational Runbook",
+      "description": "Step-by-step operational procedures for a service or process",
+      "category": "confluence-only",
+      "prompt": "templates/confluence-only/runbook.md",
+      "output": {
+        "confluence": true,
+        "jira": false,
+        "confluenceTemplate": "runbook",
+        "confluenceLabels": ["runbook", "operations"],
+        "confluenceParentPage": "Runbooks"
+      }
+    },
+    {
+      "id": "bug-fix",
+      "name": "Bug Fix",
+      "description": "Quick root cause analysis and fix ticket — no Confluence page needed",
+      "category": "jira-only",
+      "prompt": "templates/jira-only/bug-fix.md",
+      "output": {
+        "confluence": false,
+        "jira": true,
+        "jiraStructure": "single-ticket",
+        "jiraIssueType": "Bug",
+        "jiraLabels": ["bug"],
+        "defaultPriority": "High"
+      }
+    },
+    {
+      "id": "dependency-update",
+      "name": "Dependency Update",
+      "description": "Dependency upgrade plan with breaking changes checklist and subtasks",
+      "category": "jira-only",
+      "prompt": "templates/jira-only/dependency-update.md",
+      "output": {
+        "confluence": false,
+        "jira": true,
+        "jiraStructure": "story-with-subtasks",
+        "jiraIssueType": "Story",
+        "jiraLabels": ["dependencies", "maintenance"],
+        "defaultPriority": "Medium"
+      }
+    },
+    {
+      "id": "tech-debt",
+      "name": "Tech Debt Item",
+      "description": "Document tech debt with current state, desired state, and cleanup approach",
+      "category": "jira-only",
+      "prompt": "templates/jira-only/tech-debt.md",
+      "output": {
+        "confluence": false,
+        "jira": true,
+        "jiraStructure": "single-ticket",
+        "jiraIssueType": "Story",
+        "jiraLabels": ["tech-debt"],
+        "defaultPriority": "Low"
+      }
+    },
+    {
+      "id": "quick-enhancement",
+      "name": "Quick Enhancement",
+      "description": "Small feature or improvement that just needs a ticket with clear acceptance criteria",
+      "category": "jira-only",
+      "prompt": "templates/jira-only/quick-enhancement.md",
+      "output": {
+        "confluence": false,
+        "jira": true,
+        "jiraStructure": "single-ticket",
+        "jiraIssueType": "Story",
+        "jiraLabels": ["enhancement"],
+        "defaultPriority": "Medium"
+      }
+    }
+  ]
+}
