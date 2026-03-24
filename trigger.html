@@ -12,9 +12,12 @@
     .subtitle { color: #94a3b8; margin-bottom: 2rem; font-size: 0.875rem; }
     .form-group { margin-bottom: 1.25rem; }
     label { display: block; font-size: 0.875rem; font-weight: 600; margin-bottom: 0.5rem; color: #cbd5e1; }
+    .label-hint { font-weight: 400; color: #64748b; font-size: 0.8rem; }
     textarea, input, select { width: 100%; padding: 0.75rem; border: 1px solid #334155; border-radius: 0.5rem; background: #1e293b; color: #f1f5f9; font-size: 0.9rem; font-family: inherit; }
     textarea:focus, input:focus, select:focus { outline: none; border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99,102,241,0.15); }
     textarea { min-height: 120px; resize: vertical; }
+    select option { background: #1e293b; }
+    select optgroup { color: #94a3b8; font-style: normal; }
     .row { display: flex; gap: 1rem; }
     .row .form-group { flex: 1; }
     .actions { display: flex; gap: 0.75rem; margin-top: 1.5rem; }
@@ -30,16 +33,15 @@
     .status.success { display: block; background: #14532d; border: 1px solid #22c55e; color: #86efac; }
     .status.error { display: block; background: #450a0a; border: 1px solid #ef4444; color: #fca5a5; }
     .result { margin-top: 1.5rem; }
-    .result h3 { font-size: 0.875rem; color: #94a3b8; margin-bottom: 0.5rem; }
     .result pre { background: #1e293b; border: 1px solid #334155; border-radius: 0.5rem; padding: 1rem; overflow-x: auto; font-size: 0.8rem; color: #e2e8f0; max-height: 500px; overflow-y: auto; white-space: pre-wrap; }
     .result a { color: #818cf8; }
     .links { margin-top: 1rem; display: flex; gap: 0.75rem; flex-wrap: wrap; }
     .links a { color: #818cf8; font-size: 0.8rem; text-decoration: none; }
     .links a:hover { text-decoration: underline; }
     .pill { display: inline-block; padding: 0.15rem 0.5rem; border-radius: 9999px; font-size: 0.7rem; font-weight: 600; }
-    .pill-free { background: #14532d; color: #86efac; }
     .pill-local { background: #1e3a5f; color: #93c5fd; }
     .tab-active { background: #6366f1 !important; color: white !important; border-color: #6366f1 !important; }
+    .template-desc { color: #64748b; font-size: 0.8rem; margin-top: 0.35rem; min-height: 1.2rem; }
     .rendered-markdown { background: #1e293b; border: 1px solid #334155; border-radius: 0.5rem; padding: 1.5rem; overflow-x: auto; font-size: 0.875rem; color: #e2e8f0; max-height: 700px; overflow-y: auto; line-height: 1.6; }
     .rendered-markdown h1 { font-size: 1.5rem; color: #f8fafc; margin: 0 0 1rem 0; padding-bottom: 0.5rem; border-bottom: 1px solid #334155; }
     .rendered-markdown h2 { font-size: 1.2rem; color: #f1f5f9; margin: 1.5rem 0 0.75rem 0; padding-bottom: 0.35rem; border-bottom: 1px solid #1e293b; }
@@ -66,22 +68,58 @@
     <h1>AI Confluence Pipeline</h1>
     <p class="subtitle">Generate technical analysis, push to Confluence, create Jira tickets <span class="pill pill-local">LOCAL</span></p>
 
-    <div class="form-group">
-      <label for="pipeline">Pipeline</label>
-      <select id="pipeline">
-        <option value="preview">Preview — save as markdown, push later (recommended)</option>
-        <option value="analyze">Direct Push — create Confluence page + Jira tickets now</option>
-        <option value="analyze-no-jira">Direct Push — Confluence page only (no Jira)</option>
-      </select>
+    <div class="row">
+      <div class="form-group">
+        <label for="pipeline">Pipeline</label>
+        <select id="pipeline">
+          <option value="preview">Preview — save as markdown, push later</option>
+          <option value="analyze">Direct Push — Confluence + Jira</option>
+          <option value="analyze-no-jira">Direct Push — Confluence only</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="template">Template</label>
+        <select id="template" onchange="onTemplateChange()">
+          <optgroup label="General (default)">
+            <option value="generic" selected>Generic Technical Analysis</option>
+          </optgroup>
+          <optgroup label="Full Pipeline (Confluence + Jira)">
+            <option value="new-feature">New Feature</option>
+            <option value="tech-migration">Tech Stack Migration</option>
+            <option value="large-refactoring">Large Refactoring</option>
+            <option value="api-breaking-change">API Breaking Change</option>
+            <option value="security-audit">Security Audit</option>
+            <option value="performance-optimization">Performance Optimization</option>
+            <option value="scheduled-task-migration">Scheduled Task Migration</option>
+          </optgroup>
+          <optgroup label="Confluence Only (documentation)">
+            <option value="adr">Architecture Decision Record</option>
+            <option value="post-mortem">Post-Mortem / Incident Report</option>
+            <option value="runbook">Operational Runbook</option>
+          </optgroup>
+          <optgroup label="Jira Only (quick tickets)">
+            <option value="bug-fix">Bug Fix</option>
+            <option value="dependency-update">Dependency Update</option>
+            <option value="tech-debt">Tech Debt Item</option>
+            <option value="quick-enhancement">Quick Enhancement</option>
+          </optgroup>
+          <optgroup label="Legacy Prompts">
+            <option value="legacy-technical">Technical Analysis (original)</option>
+            <option value="legacy-bug">Bug Analysis (original)</option>
+            <option value="legacy-spike">Spike / Research (original)</option>
+          </optgroup>
+        </select>
+      </div>
     </div>
+    <p class="template-desc" id="template-desc">Default analysis — architecture, APIs, database, edge cases, tasks</p>
 
     <div class="form-group">
-      <label for="description">Feature / Task Description</label>
+      <label for="description">Description <span class="label-hint">— what you want analyzed</span></label>
       <textarea id="description" placeholder="e.g., Add user notification preferences with email, push, and in-app channels. Users should be able to configure which events trigger notifications and through which channels."></textarea>
     </div>
 
     <div class="form-group">
-      <label for="context">Additional Context (optional)</label>
+      <label for="context">Additional Context <span class="label-hint">(optional — tech stack, constraints, etc.)</span></label>
       <textarea id="context" rows="3" placeholder="e.g., We use PostgreSQL, React Native frontend, .NET backend with FastEndpoints. Push notifications via Firebase."></textarea>
     </div>
 
@@ -113,10 +151,38 @@
 
   <script>
     const PORT = 10353;
-    let lastResult = null; // stores the last response for download
+    let lastResult = null;
+
+    // Template descriptions for the UI
+    const TEMPLATE_DESCRIPTIONS = {
+      'generic': 'Default analysis — architecture, APIs, database, edge cases, tasks',
+      'new-feature': 'Full technical analysis for a new feature — architecture, APIs, DB, edge cases, tasks',
+      'tech-migration': 'Phased migration plan with impact analysis, rollback strategy, and parallel-run approach',
+      'large-refactoring': 'Before/after architecture analysis with incremental migration steps',
+      'api-breaking-change': 'Contract diff, consumer impact analysis, and versioned migration guide',
+      'security-audit': 'Vulnerability report with CVSS-style scoring and remediation tasks',
+      'performance-optimization': 'Bottleneck analysis, benchmark targets, and optimization tasks',
+      'scheduled-task-migration': 'Discovery document + phased migration plan for scheduled task → job framework',
+      'adr': 'Architecture Decision Record — options, decision, consequences (no tickets)',
+      'post-mortem': 'Blameless incident analysis with timeline, root cause, and action items (no tickets)',
+      'runbook': 'Step-by-step operational procedures for on-call (no tickets)',
+      'bug-fix': 'Root cause analysis and fix ticket — Jira only, no Confluence page',
+      'dependency-update': 'Dependency upgrade plan with breaking changes — Jira only',
+      'tech-debt': 'Tech debt item with business justification — Jira only',
+      'quick-enhancement': 'Small improvement ticket with acceptance criteria — Jira only',
+      'legacy-technical': 'Original technical analysis prompt (architecture, APIs, tasks)',
+      'legacy-bug': 'Original bug analysis prompt (root cause, fix strategy, tasks)',
+      'legacy-spike': 'Original spike/research prompt (options matrix, PoC plan, tasks)'
+    };
+
+    function onTemplateChange() {
+      const template = document.getElementById('template').value;
+      document.getElementById('template-desc').textContent = TEMPLATE_DESCRIPTIONS[template] || '';
+    }
 
     async function runPipeline() {
       const pipeline = document.getElementById('pipeline').value;
+      const template = document.getElementById('template').value;
       const description = document.getElementById('description').value.trim();
       const context = document.getElementById('context').value.trim();
       const status = document.getElementById('status');
@@ -132,7 +198,7 @@
 
       document.getElementById('submit').disabled = true;
       status.className = 'status loading';
-      status.textContent = 'Generating analysis... this takes 15-60 seconds depending on the model.';
+      status.textContent = `Generating analysis using "${TEMPLATE_DESCRIPTIONS[template]?.split('—')[0]?.trim() || template}" template... this takes 15-60 seconds.`;
       result.style.display = 'none';
 
       const isPreview = pipeline === 'preview';
@@ -140,7 +206,8 @@
 
       const body = {
         featureDescription: description,
-        additionalContext: context
+        additionalContext: context,
+        template: template
       };
 
       if (!isPreview) {
@@ -155,12 +222,9 @@
         });
 
         let data = await response.json();
-
-        // n8n lastNode mode may wrap response in an array or under nested keys
         if (Array.isArray(data)) data = data[0];
         if (data?.json) data = data.json;
 
-        // Check if we got a valid response (any of these fields means success)
         const isSuccess = data.success || data.analysis || data.markdown || data.title || data.confluencePage;
 
         if (isSuccess) {
@@ -203,7 +267,6 @@
         } else if (!response.ok) {
           throw new Error(`HTTP ${response.status}: ${JSON.stringify(data, null, 2)}`);
         } else {
-          // Response is 200 but unexpected shape — show it anyway
           status.className = 'status success';
           status.textContent = 'Analysis complete (unexpected response format — showing raw output)';
           lastResult = data;
@@ -225,17 +288,6 @@
       document.getElementById('submit').disabled = false;
     }
 
-    function clearForm() {
-      document.getElementById('description').value = '';
-      document.getElementById('context').value = '';
-      document.getElementById('status').className = 'status';
-      document.getElementById('result').style.display = 'none';
-      document.getElementById('download-actions').style.display = 'none';
-      document.getElementById('view-toggle').style.display = 'none';
-      document.getElementById('result-preview').innerHTML = '';
-      lastResult = null;
-    }
-
     function switchView(view) {
       const preview = document.getElementById('result-preview');
       const raw = document.getElementById('result-content');
@@ -255,14 +307,10 @@
     }
 
     function markdownToHtml(md) {
-      // Simple markdown to HTML converter (no external deps)
       let html = md;
-      // Code blocks (``` ... ```)
       html = html.replace(/```(\w+)?\n([\s\S]*?)```/g, (_, lang, code) =>
         `<pre><code>${code.replace(/</g, '&lt;').replace(/>/g, '&gt;').trim()}</code></pre>`);
-      // Inline code
       html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
-      // Tables
       html = html.replace(/^(\|.+\|)\n(\|[-| :]+\|)\n((?:\|.+\|\n?)*)/gm, (_, header, sep, body) => {
         const ths = header.split('|').filter(c => c.trim()).map(c => `<th>${c.trim()}</th>`).join('');
         const rows = body.trim().split('\n').map(row => {
@@ -271,26 +319,18 @@
         }).join('');
         return `<table><thead><tr>${ths}</tr></thead><tbody>${rows}</tbody></table>`;
       });
-      // Headers
       html = html.replace(/^#### (.+)$/gm, '<h4>$1</h4>');
       html = html.replace(/^### (.+)$/gm, '<h3>$1</h3>');
       html = html.replace(/^## (.+)$/gm, '<h2>$1</h2>');
       html = html.replace(/^# (.+)$/gm, '<h1>$1</h1>');
-      // Bold and italic
       html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
       html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
-      // Blockquotes
       html = html.replace(/^> (.+)$/gm, '<blockquote>$1</blockquote>');
-      // Unordered lists
       html = html.replace(/^- (.+)$/gm, '<li>$1</li>');
       html = html.replace(/((?:<li>.*<\/li>\n?)+)/g, '<ul>$1</ul>');
-      // Horizontal rules
       html = html.replace(/^---$/gm, '<hr>');
-      // Links
       html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank">$1</a>');
-      // Paragraphs (lines not already wrapped in HTML tags)
       html = html.replace(/^(?!<[a-z/])(.+)$/gm, '<p>$1</p>');
-      // Clean up empty paragraphs
       html = html.replace(/<p>\s*<\/p>/g, '');
       return html;
     }
@@ -306,7 +346,6 @@
     function downloadFile(type) {
       if (!lastResult) return;
       let content, mimeType, filename;
-
       if (type === 'md') {
         content = lastResult.markdown;
         mimeType = 'text/markdown';
@@ -316,7 +355,6 @@
         mimeType = 'application/json';
         filename = getFilename('json');
       }
-
       const blob = new Blob([content], { type: mimeType });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -336,7 +374,17 @@
       });
     }
 
-    // Allow Ctrl+Enter to submit
+    function clearForm() {
+      document.getElementById('description').value = '';
+      document.getElementById('context').value = '';
+      document.getElementById('status').className = 'status';
+      document.getElementById('result').style.display = 'none';
+      document.getElementById('download-actions').style.display = 'none';
+      document.getElementById('view-toggle').style.display = 'none';
+      document.getElementById('result-preview').innerHTML = '';
+      lastResult = null;
+    }
+
     document.addEventListener('keydown', (e) => {
       if (e.ctrlKey && e.key === 'Enter') runPipeline();
     });
