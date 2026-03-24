@@ -110,28 +110,52 @@ The prompts in `prompts/` are what the current n8n workflow uses. The templates 
 | [Bug Analysis](prompts/bug-analysis.md) | Bug reports (original format) |
 | [Spike Analysis](prompts/spike-analysis.md) | Research/evaluation (original format) |
 
-## Trigger Methods
+## Workflows
+
+### Preview First (Recommended)
+
+Generate analysis as local markdown files, review/edit, then push to Confluence when ready.
 
 ```bash
-# CLI (Bash)
+# Step 1: Generate preview
+./scripts/trigger-preview.sh "Add user notification preferences"
+# → Saves preview/20260324-143022-user-notifications.md   (review this)
+# → Saves preview/20260324-143022-user-notifications.json (data for push)
+
+# Step 2: Review and edit the markdown in your editor
+
+# Step 3: Push to Confluence
+./scripts/push-to-confluence.sh preview/20260324-143022-user-notifications.json
+
+# Step 3 (with Jira tickets):
+./scripts/push-to-confluence.sh preview/20260324-143022-user-notifications.json --jira
+```
+
+```powershell
+# PowerShell
+.\scripts\trigger-preview.ps1 -Description "Add user notification preferences"
+.\scripts\push-to-confluence.ps1 -File preview\20260324-143022-user-notifications.json
+.\scripts\push-to-confluence.ps1 -File preview\20260324-143022-user-notifications.json -CreateJira
+```
+
+Import `workflows/preview-pipeline.json` into n8n for this workflow.
+
+### Direct Push (Original)
+
+Skip preview, push directly to Confluence and create Jira tickets in one step.
+
+```bash
 ./scripts/trigger-analysis.sh "Add feature X"
 ./scripts/trigger-analysis.sh "Add feature X" --no-jira
 ./scripts/trigger-analysis.sh "Add feature X" --context "We use PostgreSQL"
+```
 
-# CLI (PowerShell)
+```powershell
 .\scripts\trigger-analysis.ps1 -Description "Add feature X"
 .\scripts\trigger-analysis.ps1 -Description "Add feature X" -NoJira
-.\scripts\trigger-analysis.ps1 -Description "Add feature X" -Context "We use PostgreSQL"
-
-# Direct API call
-curl -X POST http://localhost:10353/webhook/analyze \
-  -H "Content-Type: application/json" \
-  -d '{
-    "featureDescription": "Add feature X",
-    "createJiraTasks": true,
-    "additionalContext": "We use PostgreSQL"
-  }'
 ```
+
+Import `workflows/github-models-pipeline.json` (free) or `workflows/technical-analysis-pipeline.json` (Anthropic) for this workflow.
 
 ## Team Context Profiles
 

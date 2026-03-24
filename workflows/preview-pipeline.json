@@ -1,0 +1,124 @@
+{
+  "name": "AI Technical Analysis → Preview (Markdown)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "preview",
+        "options": {
+          "responseMode": "responseNode"
+        }
+      },
+      "id": "webhook-trigger",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "webhookId": "preview"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "feature-desc",
+              "name": "featureDescription",
+              "value": "={{ $json.body.featureDescription }}",
+              "type": "string"
+            },
+            {
+              "id": "additional-context",
+              "name": "additionalContext",
+              "value": "={{ $json.body.additionalContext || '' }}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "id": "set-variables",
+      "name": "Set Variables",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://models.github.ai/inference/chat/completions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "=Bearer {{ $env.GITHUB_TOKEN }}" },
+            { "name": "Content-Type", "value": "application/json" },
+            { "name": "Accept", "value": "application/vnd.github+json" },
+            { "name": "X-GitHub-Api-Version", "value": "2026-03-10" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"{{ $env.AI_MODEL || 'openai/gpt-4o' }}\",\n  \"max_tokens\": {{ $env.AI_MAX_TOKENS || 4096 }},\n  \"messages\": [\n    {\n      \"role\": \"user\",\n      \"content\": \"You are a senior software architect performing technical analysis for a development team.\\n\\nGiven the following feature description, produce a detailed technical analysis as a JSON object.\\n\\n## Feature Description\\n{{ $json.featureDescription }}\\n\\n## Additional Context\\n{{ $json.additionalContext }}\\n\\n## Output Format\\n\\nRespond ONLY with valid JSON matching this schema:\\n\\n{\\n  \\\"title\\\": \\\"Short descriptive title\\\",\\n  \\\"summary\\\": \\\"2-3 sentence executive summary\\\",\\n  \\\"architecture\\\": {\\n    \\\"overview\\\": \\\"High-level architecture description\\\",\\n    \\\"components\\\": [{\\\"name\\\": \\\"...\\\", \\\"type\\\": \\\"frontend|backend|database|infrastructure\\\", \\\"description\\\": \\\"...\\\", \\\"changes\\\": \\\"...\\\"}],\\n    \\\"dataFlow\\\": \\\"Data flow description\\\"\\n  },\\n  \\\"apiContracts\\\": [{\\\"method\\\": \\\"GET|POST|PUT|DELETE\\\", \\\"path\\\": \\\"/api/...\\\", \\\"description\\\": \\\"...\\\", \\\"requestBody\\\": {}, \\\"responseBody\\\": {}, \\\"statusCodes\\\": [\\\"200 - OK\\\"]}],\\n  \\\"databaseChanges\\\": [{\\\"type\\\": \\\"new-table|alter-table\\\", \\\"entity\\\": \\\"...\\\", \\\"description\\\": \\\"...\\\", \\\"fields\\\": [{\\\"name\\\": \\\"...\\\", \\\"type\\\": \\\"...\\\", \\\"nullable\\\": false}]}],\\n  \\\"edgeCases\\\": [{\\\"scenario\\\": \\\"...\\\", \\\"impact\\\": \\\"low|medium|high\\\", \\\"mitigation\\\": \\\"...\\\"}],\\n  \\\"securityConsiderations\\\": [\\\"...\\\"],\\n  \\\"testingStrategy\\\": {\\\"unitTests\\\": [\\\"...\\\"], \\\"integrationTests\\\": [\\\"...\\\"], \\\"e2eTests\\\": [\\\"...\\\"]},\\n  \\\"tasks\\\": [{\\\"type\\\": \\\"epic|story|subtask\\\", \\\"summary\\\": \\\"...\\\", \\\"description\\\": \\\"...\\\", \\\"component\\\": \\\"frontend|backend|database|devops|testing\\\", \\\"estimate\\\": \\\"XS|S|M|L|XL\\\", \\\"priority\\\": \\\"Critical|High|Medium|Low\\\", \\\"acceptanceCriteria\\\": [\\\"Given X, when Y, then Z\\\"]}],\\n  \\\"estimatedComplexity\\\": \\\"low|medium|high\\\",\\n  \\\"suggestedApproach\\\": \\\"Recommended implementation order\\\"\\n}\\n\\nRules: Tasks should be 1-3 day work items. Include Gherkin acceptance criteria. Be specific, not generic.\"\n    }\n  ]\n}"
+      },
+      "id": "call-github-models",
+      "name": "Call GitHub Models API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract JSON from GitHub Models (OpenAI-compatible) response\nconst response = $input.first().json;\nconst content = response.choices[0].message.content;\n\n// Parse the JSON (handle markdown code fences if present)\nlet jsonStr = content;\nif (content.includes('```json')) {\n  jsonStr = content.split('```json')[1].split('```')[0].trim();\n} else if (content.includes('```')) {\n  jsonStr = content.split('```')[1].split('```')[0].trim();\n}\n\nlet analysis;\ntry {\n  analysis = JSON.parse(jsonStr);\n} catch (e) {\n  throw new Error(`Failed to parse AI response as JSON: ${e.message}\\n\\nRaw response: ${content.substring(0, 500)}`);\n}\n\nconst vars = $('Set Variables').first().json;\n\nreturn [{\n  json: {\n    analysis,\n    featureDescription: vars.featureDescription\n  }\n}];"
+      },
+      "id": "parse-response",
+      "name": "Parse AI Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Convert analysis JSON to readable Markdown for local preview\nconst { analysis } = $input.first().json;\nconst date = new Date().toISOString().split('T')[0];\n\nlet md = '';\n\nmd += `# ${analysis.title}\\n\\n`;\nmd += `> Generated on ${date} by [ai-confluence-pipeline](https://github.com/openmindednewby/ai-confluence-pipeline)\\n\\n`;\nmd += `**Complexity:** ${analysis.estimatedComplexity} | **Approach:** ${analysis.suggestedApproach}\\n\\n`;\nmd += `---\\n\\n`;\n\n// Summary\nmd += `## Summary\\n\\n${analysis.summary}\\n\\n`;\n\n// Architecture\nmd += `## Architecture\\n\\n${analysis.architecture.overview}\\n\\n`;\nmd += `### Components\\n\\n`;\nmd += `| Component | Type | Description | Changes |\\n`;\nmd += `|-----------|------|-------------|---------|\\n`;\nfor (const c of analysis.architecture.components || []) {\n  md += `| **${c.name}** | \\`${c.type}\\` | ${c.description} | ${c.changes} |\\n`;\n}\nmd += `\\n`;\n\nif (analysis.architecture.dataFlow) {\n  md += `### Data Flow\\n\\n${analysis.architecture.dataFlow}\\n\\n`;\n}\n\n// API Contracts\nif (analysis.apiContracts?.length) {\n  md += `## API Contracts\\n\\n`;\n  for (const api of analysis.apiContracts) {\n    md += `### \\`${api.method} ${api.path}\\`\\n\\n`;\n    md += `${api.description}\\n\\n`;\n    if (api.requestBody && Object.keys(api.requestBody).length) {\n      md += `**Request:**\\n\\`\\`\\`json\\n${JSON.stringify(api.requestBody, null, 2)}\\n\\`\\`\\`\\n\\n`;\n    }\n    if (api.responseBody && Object.keys(api.responseBody).length) {\n      md += `**Response:**\\n\\`\\`\\`json\\n${JSON.stringify(api.responseBody, null, 2)}\\n\\`\\`\\`\\n\\n`;\n    }\n    if (api.statusCodes?.length) {\n      md += `**Status Codes:** ${api.statusCodes.join(', ')}\\n\\n`;\n    }\n  }\n}\n\n// Database Changes\nif (analysis.databaseChanges?.length) {\n  md += `## Database Changes\\n\\n`;\n  md += `| Type | Entity | Description |\\n`;\n  md += `|------|--------|-------------|\\n`;\n  for (const db of analysis.databaseChanges) {\n    md += `| \\`${db.type}\\` | **${db.entity}** | ${db.description} |\\n`;\n    if (db.fields?.length) {\n      md += `\\n| Field | Type | Nullable | Description |\\n`;\n      md += `|-------|------|----------|-------------|\\n`;\n      for (const f of db.fields) {\n        md += `| \\`${f.name}\\` | \\`${f.type}\\` | ${f.nullable ? 'Yes' : 'No'} | ${f.description || ''} |\\n`;\n      }\n    }\n  }\n  md += `\\n`;\n}\n\n// Edge Cases\nif (analysis.edgeCases?.length) {\n  md += `## Edge Cases\\n\\n`;\n  md += `| Scenario | Impact | Mitigation |\\n`;\n  md += `|----------|--------|------------|\\n`;\n  for (const ec of analysis.edgeCases) {\n    md += `| ${ec.scenario} | \\`${ec.impact}\\` | ${ec.mitigation} |\\n`;\n  }\n  md += `\\n`;\n}\n\n// Security\nif (analysis.securityConsiderations?.length) {\n  md += `## Security Considerations\\n\\n`;\n  for (const s of analysis.securityConsiderations) {\n    md += `- ${s}\\n`;\n  }\n  md += `\\n`;\n}\n\n// Testing Strategy\nif (analysis.testingStrategy) {\n  md += `## Testing Strategy\\n\\n`;\n  const ts = analysis.testingStrategy;\n  if (ts.unitTests?.length) {\n    md += `### Unit Tests\\n`;\n    for (const t of ts.unitTests) md += `- ${t}\\n`;\n    md += `\\n`;\n  }\n  if (ts.integrationTests?.length) {\n    md += `### Integration Tests\\n`;\n    for (const t of ts.integrationTests) md += `- ${t}\\n`;\n    md += `\\n`;\n  }\n  if (ts.e2eTests?.length) {\n    md += `### E2E Tests\\n`;\n    for (const t of ts.e2eTests) md += `- ${t}\\n`;\n    md += `\\n`;\n  }\n}\n\n// Tasks\nif (analysis.tasks?.length) {\n  md += `## Task Breakdown\\n\\n`;\n  md += `| Type | Summary | Component | Estimate | Priority |\\n`;\n  md += `|------|---------|-----------|----------|----------|\\n`;\n  for (const t of analysis.tasks) {\n    md += `| \\`${t.type}\\` | ${t.summary} | \\`${t.component}\\` | ${t.estimate} | ${t.priority} |\\n`;\n  }\n  md += `\\n`;\n\n  // Detailed tasks with acceptance criteria\n  md += `### Task Details\\n\\n`;\n  for (let i = 0; i < analysis.tasks.length; i++) {\n    const t = analysis.tasks[i];\n    md += `#### ${i + 1}. ${t.summary}\\n\\n`;\n    md += `${t.description}\\n\\n`;\n    if (t.acceptanceCriteria?.length) {\n      md += `**Acceptance Criteria:**\\n`;\n      for (const ac of t.acceptanceCriteria) {\n        md += `- ${ac}\\n`;\n      }\n      md += `\\n`;\n    }\n  }\n}\n\nreturn [{ json: { markdown: md, analysis: $input.first().json.analysis } }];"
+      },
+      "id": "format-markdown",
+      "name": "Format as Markdown",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1120, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ success: true, title: $json.analysis.title, markdown: $json.markdown, analysis: $json.analysis }) }}"
+      },
+      "id": "respond-webhook",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1340, 300]
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {
+      "main": [[{ "node": "Set Variables", "type": "main", "index": 0 }]]
+    },
+    "Set Variables": {
+      "main": [[{ "node": "Call GitHub Models API", "type": "main", "index": 0 }]]
+    },
+    "Call GitHub Models API": {
+      "main": [[{ "node": "Parse AI Response", "type": "main", "index": 0 }]]
+    },
+    "Parse AI Response": {
+      "main": [[{ "node": "Format as Markdown", "type": "main", "index": 0 }]]
+    },
+    "Format as Markdown": {
+      "main": [[{ "node": "Respond to Webhook", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": [
+    { "name": "ai-pipeline" },
+    { "name": "preview" },
+    { "name": "github-models" }
+  ]
+}

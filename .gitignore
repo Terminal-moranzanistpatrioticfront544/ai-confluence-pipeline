@@ -5,3 +5,8 @@ node_modules/
 *.log
 .DS_Store
 Thumbs.db
+
+# Preview output (generated files, review locally)
+preview/*.md
+preview/*.json
+!preview/.gitkeep
