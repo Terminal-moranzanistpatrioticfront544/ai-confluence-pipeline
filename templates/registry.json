@@ -199,6 +199,22 @@
         "jiraLabels": ["enhancement"],
         "defaultPriority": "Medium"
       }
+    },
+    {
+      "id": "scheduled-task-migration",
+      "name": "Legacy Scheduled Task Migration",
+      "description": "Discovery documentation and phased migration plan for converting a legacy scheduled task into a modern job framework — includes code analysis, dependency mapping, testing strategy, and cleanup",
+      "category": "full-pipeline",
+      "prompt": "templates/full-pipeline/scheduled-task-migration.md",
+      "output": {
+        "confluence": true,
+        "jira": true,
+        "confluenceTemplate": "migration-plan",
+        "jiraStructure": "phased-epics",
+        "confluenceLabels": ["technical-analysis", "migration", "scheduled-task"],
+        "jiraLabels": ["migration"],
+        "defaultPriority": "High"
+      }
     }
   ]
 }
