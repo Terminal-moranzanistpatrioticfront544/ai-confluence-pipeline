@@ -149,27 +149,33 @@ Open http://localhost:10353 and log in with the credentials from `.env` (`N8N_BA
 
 ## 5. Set Up Credentials in n8n
 
-Credentials are managed in the **left sidebar** of n8n (not in Settings):
+Credentials are created **from inside the workflow nodes**, not from a separate settings page.
 
-1. Click **Credentials** in the left sidebar (key icon)
-2. Click **"Add Credential"** (top-right)
-3. Search for **"HTTP Basic Auth"** and select it
-4. Create **"Confluence Basic Auth"**:
+### Confluence credential:
+
+1. Open your imported workflow
+2. Double-click the **"Create Confluence Page"** node
+3. In the node settings, find **Authentication** → it should say **"Generic Credential Type"** with **"HTTP Basic Auth"**
+4. Next to **Credential for HTTP Basic Auth**, click the dropdown → **"Create New Credential"**
+5. Fill in:
    - **User:** your Atlassian email (e.g., `you@company.com`)
-   - **Password:** your Confluence API token (from step 1 — this is NOT your Atlassian password)
-   - Click **Save**
-5. Click **"Add Credential"** again → **"HTTP Basic Auth"**
-6. Create **"Jira Basic Auth"** (skip if not using Jira):
+   - **Password:** your Confluence **API token** (from step 1 — this is NOT your Atlassian login password)
+6. Click **Save** — name it something like "Confluence Basic Auth"
+
+### Jira credential (skip if not using Jira):
+
+7. Double-click the **"Create Jira Issue"** node
+8. Next to **Credential for HTTP Basic Auth**, click the dropdown → **"Create New Credential"**
+9. Fill in:
    - **User:** your Atlassian email (same as above)
-   - **Password:** your Jira API token (same token works if same Atlassian instance)
-   - Click **Save**
+   - **Password:** your Jira **API token** (same token works if same Atlassian instance)
+10. Click **Save**
 
-Then connect credentials to the workflow:
+> **Reusing credentials:** After creating a credential once, it appears in the dropdown of any HTTP Request node. You can select an existing credential instead of creating a new one.
 
-7. Open your imported workflow
-8. Double-click the **"Create Confluence Page"** node → under **Credential for HTTP Basic Auth**, select **"Confluence Basic Auth"**
-9. Double-click the **"Create Jira Issue"** node → select **"Jira Basic Auth"**
-10. Click **Save** on the workflow
+### Save the workflow
+
+11. Click **Save** in the top-right of the workflow editor
 
 ## 6. Activate the Workflow
 
