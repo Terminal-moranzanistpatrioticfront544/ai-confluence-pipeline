@@ -5,9 +5,8 @@
       "parameters": {
         "httpMethod": "POST",
         "path": "preview",
-        "options": {
-          "responseMode": "responseNode"
-        }
+        "responseMode": "responseNode",
+        "options": {}
       },
       "id": "a1000000-0000-0000-0000-000000000001",
       "name": "Webhook Trigger",
