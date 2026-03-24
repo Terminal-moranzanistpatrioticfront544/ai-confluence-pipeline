@@ -327,10 +327,46 @@ cp team-profiles/example.json team-profiles/my-team.json
 
 Edit `my-team.json` with your tech stack, conventions, Jira project key, and Confluence space. This context gets injected into prompts for more specific output. See [team-profiles/example.json](../team-profiles/example.json) for what each field does.
 
-## 9. Customize
+## 9. Add Custom Company Prompts (Optional)
 
-- **Prompts**: Edit `prompts/` to match your team's conventions (used by the current n8n workflow)
-- **Templates**: Browse `templates/` for 13 scenario-specific prompt templates (new-feature, bug-fix, ADR, etc.) — see [CUSTOMIZATION.md](CUSTOMIZATION.md) for details
+Create proprietary prompt templates that appear in the browser form dropdown but are **never committed to git** (gitignored).
+
+1. Copy the example file:
+   ```bash
+   cp custom-prompts/custom-prompts.example.js custom-prompts/custom-prompts.js
+   ```
+
+2. Edit `custom-prompts/custom-prompts.js` and add your company-specific templates:
+   ```javascript
+   const CUSTOM_PROMPTS = [
+     {
+       id: 'my-company-migration',
+       name: 'Migration to Our Framework',
+       description: 'Migrate a service following our company standards',
+       category: 'My Company',        // Group label in dropdown
+       role: 'You are a senior engineer at My Company...',  // AI role
+       schema: 'Produce JSON with: ...'  // Output format
+     }
+   ];
+   ```
+
+3. Refresh `trigger.html` — your templates appear at the **top** of the Template dropdown under your company name.
+
+Each template needs:
+- **`id`** — unique identifier (kebab-case)
+- **`name`** — display name in dropdown
+- **`description`** — shown below the dropdown when selected
+- **`category`** — group label (use your company name)
+- **`role`** — who the AI pretends to be (the system instruction)
+- **`schema`** — what JSON fields to produce (the output format)
+
+See `custom-prompts/custom-prompts.example.js` for complete examples.
+
+> **Security:** This file is gitignored and never leaves your machine. The prompt text is sent directly from your browser to your local n8n instance — it never touches GitHub or any external server.
+
+## 10. Customize
+
+- **Templates**: Browse `templates/` for 14 built-in prompt templates — see [CUSTOMIZATION.md](CUSTOMIZATION.md)
 - **Confluence**: Modify the "Format for Confluence" node to match your page templates
 - **Jira**: Add labels, components, or custom fields to the "Create Jira Issue" node
 

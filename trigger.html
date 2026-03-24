@@ -149,9 +149,43 @@
     </div>
   </div>
 
+  <!-- Load custom company prompts (gitignored, optional) -->
+  <script>var CUSTOM_PROMPTS = [];</script>
+  <script src="custom-prompts/custom-prompts.js" onerror=""></script>
+
   <script>
     const PORT = 10353;
     let lastResult = null;
+
+    // Load custom prompts into dropdown on page load
+    (function loadCustomPrompts() {
+      if (!window.CUSTOM_PROMPTS || !CUSTOM_PROMPTS.length) return;
+      const select = document.getElementById('template');
+
+      // Group by category
+      const groups = {};
+      for (const t of CUSTOM_PROMPTS) {
+        const cat = t.category || 'Custom';
+        if (!groups[cat]) groups[cat] = [];
+        groups[cat].push(t);
+      }
+
+      // Insert custom groups before the first optgroup (so they appear at top)
+      const firstGroup = select.querySelector('optgroup');
+      for (const [category, templates] of Object.entries(groups)) {
+        const group = document.createElement('optgroup');
+        group.label = category + ' (custom)';
+        for (const t of templates) {
+          const opt = document.createElement('option');
+          opt.value = 'custom:' + t.id;
+          opt.textContent = t.name;
+          group.appendChild(opt);
+          // Add to descriptions map
+          TEMPLATE_DESCRIPTIONS['custom:' + t.id] = t.description;
+        }
+        select.insertBefore(group, firstGroup);
+      }
+    })();
 
     // Template descriptions for the UI
     const TEMPLATE_DESCRIPTIONS = {
@@ -209,6 +243,16 @@
         additionalContext: context,
         template: template
       };
+
+      // If custom template selected, include the prompt directly in the request
+      if (template.startsWith('custom:')) {
+        const customId = template.replace('custom:', '');
+        const customTemplate = CUSTOM_PROMPTS.find(t => t.id === customId);
+        if (customTemplate) {
+          body.customRole = customTemplate.role;
+          body.customSchema = customTemplate.schema;
+        }
+      }
 
       if (!isPreview) {
         body.createJiraTasks = pipeline !== 'analyze-no-jira';

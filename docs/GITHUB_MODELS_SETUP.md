@@ -24,12 +24,14 @@ Models accessible via GitHub Models API include:
 
 | Model | ID for API | Quality |
 |-------|-----------|---------|
-| GPT-4o | `openai/gpt-4o` | Excellent |
-| GPT-4o mini | `openai/gpt-4o-mini` | Good, faster |
-| GPT-4.1 | `openai/gpt-4.1` | Excellent |
-| Claude Sonnet 4.6 | `anthropic/claude-sonnet-4.6` | Excellent |
-| Claude Haiku 4.5 | `anthropic/claude-haiku-4.5` | Good, faster |
+| Claude Opus 4 | `anthropic/claude-4-opus` | Best, recommended |
+| Claude Sonnet 4 | `anthropic/claude-4-sonnet` | Great, faster |
+| Claude Haiku 3.5 | `anthropic/claude-3.5-haiku` | Good, fastest |
+| GPT-5 | `openai/gpt-5` | Excellent |
+| GPT-5 mini | `openai/gpt-5-mini` | Good, faster |
+| GPT-4o | `openai/gpt-4o` | Great |
 | Llama 4 Scout | `meta/llama-4-scout` | Good, open-source |
+| DeepSeek R1 | `deepseek/deepseek-r1` | Good, reasoning |
 
 > Check the full catalog: `GET https://models.github.ai/catalog/models`
 

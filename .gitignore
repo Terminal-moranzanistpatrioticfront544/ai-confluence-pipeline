@@ -10,3 +10,8 @@ Thumbs.db
 preview/*.md
 preview/*.json
 !preview/.gitkeep
+
+# Custom company prompts (proprietary, never committed)
+custom-prompts/custom-prompts.js
+!custom-prompts/.gitkeep
+!custom-prompts/custom-prompts.example.js
