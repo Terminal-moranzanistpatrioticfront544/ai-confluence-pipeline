@@ -177,9 +177,11 @@ Credentials are created **from inside the workflow nodes**, not from a separate 
 
 11. Click **Save** in the top-right of the workflow editor
 
-## 6. Activate the Workflow
+## 6. Publish the Workflow
 
-Toggle the **Active** switch in the top-right corner of the workflow editor. The webhook URL becomes live once activated.
+Click the **"Publish"** button in the top-right corner of the workflow editor. This makes the workflow live and enables the webhook URL to receive requests.
+
+> In older n8n versions this was called "Activate". In current versions it's **"Publish"**.
 
 ## 7. Test It
 
