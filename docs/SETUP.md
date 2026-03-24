@@ -7,6 +7,8 @@
 - Jira Cloud (with API token) — optional
 - Anthropic API key (or OpenAI)
 
+> **n8n licensing:** n8n is free for self-hosted use (fair-code / Sustainable Use License). No user, workflow, or execution limits. You only need a paid license if you resell it or offer it as a hosted service. For details or fully open-source alternatives, see the [FAQ in README](../README.md#faq).
+
 ## 1. Get Your API Tokens
 
 ### Confluence & Jira API Token

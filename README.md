@@ -177,8 +177,24 @@ Yes. Pass `createJiraTasks: false` or use the `--no-jira` flag. You'll still get
 **Can I run this without Docker?**
 Yes. Install n8n globally with `npm install -g n8n`, then `n8n start`. Import the workflow the same way.
 
+**Is n8n free?**
+Yes, for self-hosted use. n8n uses a "fair-code" license (Sustainable Use License) — free to self-host internally with no user, workflow, or execution limits. You only need a paid license if you resell it or offer it as a hosted service. For running this pipeline on your own machine or your company's server, it's completely free. If your company has strict OSS-only policies, see [Alternatives to n8n](#alternatives-to-n8n) below.
+
 **How do I add this to a CI/CD pipeline?**
 Trigger the webhook from your CI — e.g., when a specific label is added to a GitHub issue, a GitHub Action calls the webhook with the issue body.
+
+### Alternatives to n8n
+
+If you need a fully open-source alternative or prefer a different tool:
+
+| Tool | License | Notes |
+|------|---------|-------|
+| **n8n** (used here) | Fair-code (free self-hosted) | Best UI, most integrations, easiest setup |
+| **Activepieces** | MIT | Fully open-source, similar visual workflow builder |
+| **Windmill** | AGPLv3 | More developer-focused, script-based workflows |
+| **Plain scripts** | N/A | The prompt templates and API calls work without any workflow tool — just use the trigger scripts directly |
+
+The workflow JSON, prompt templates, and trigger scripts in this repo are all MIT-licensed regardless of which orchestration tool you use.
 
 ## Roadmap
 
