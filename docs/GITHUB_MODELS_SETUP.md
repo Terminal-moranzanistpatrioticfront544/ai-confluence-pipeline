@@ -39,47 +39,40 @@ Models accessible via GitHub Models API include:
 
 You need a PAT (Personal Access Token) to authenticate with the GitHub Models API. There are two types — either works.
 
-#### Option A: Classic Token (simpler)
+#### Option A: Classic Token (recommended — simplest)
 
-1. Open GitHub → click your **profile picture** (top-right) → **Settings**
-2. Scroll the left sidebar all the way to the bottom → click **Developer settings**
-3. Click **Personal access tokens** → **Tokens (classic)**
-4. Click **"Generate new token"** → **"Generate new token (classic)"**
-5. Fill in:
+Classic tokens work with GitHub Models **without any special scopes**. You don't need to check any boxes.
+
+1. Go to https://github.com/settings/tokens
+   - Or: Profile picture (top-right) → **Settings** → scroll left sidebar to the very bottom → **Developer settings** → **Personal access tokens** → **Tokens (classic)**
+2. Click **"Generate new token"** → **"Generate new token (classic)"**
+3. Fill in:
    - **Note:** `ai-confluence-pipeline`
    - **Expiration:** 90 days (or "No expiration" for personal use)
-6. Under **"Select scopes"**, check: **`read:models`**
-   - This is in the "Models" section — scroll down to find it
-   - You do NOT need any other scopes (no repo, no user, etc.)
-7. Click **"Generate token"** (green button at bottom)
-8. **Copy the token immediately** — GitHub will never show it again
+4. **Leave all scopes unchecked** — classic tokens access GitHub Models automatically, no special permissions needed
+5. Click **"Generate token"** (green button at bottom)
+6. **Copy the token immediately** — GitHub will never show it again
    - It looks like: `ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx`
 
-> **Direct link:** https://github.com/settings/tokens
+#### Option B: Fine-Grained Token (stricter security)
 
-#### Option B: Fine-Grained Token (more secure)
+Fine-grained tokens DO need an explicit permission:
 
-1. Open GitHub → **Settings** → **Developer settings** → **Personal access tokens** → **Fine-grained tokens**
+1. Go to https://github.com/settings/tokens?type=beta
+   - Or: **Settings** → **Developer settings** → **Personal access tokens** → **Fine-grained tokens**
 2. Click **"Generate new token"**
 3. Fill in:
    - **Token name:** `ai-confluence-pipeline`
    - **Expiration:** 90 days
 4. Under **Permissions** → **Account permissions** → find **"Models"** → set to **"Read"**
+   - If you don't see "Models" in the list, your account may not have this option yet — use a classic token instead
 5. Click **"Generate token"**
 6. **Copy the token immediately**
    - It looks like: `github_pat_xxxxxxxxxxxxxxxxxxxxxxxxxxxx`
 
-> **Direct link:** https://github.com/settings/tokens?type=beta
->
-> **"Models" not showing?** Some accounts don't have the Models permission in fine-grained tokens yet. Use a classic token instead (Option A).
+#### Can't find Developer Settings?
 
-#### Where is Developer Settings?
-
-If you can't find it:
-1. Go to https://github.com/settings/profile
-2. The left sidebar has many sections — scroll all the way to the **bottom**
-3. The last item is **"Developer settings"** — click it
-4. Or go directly to: https://github.com/settings/apps
+Go to https://github.com/settings/profile → scroll the left sidebar all the way to the **bottom** → the last item is **"Developer settings"**. Or go directly to: https://github.com/settings/apps
 
 ### 2. Configure .env
 

@@ -17,26 +17,34 @@
 
 You need a GitHub Personal Access Token (PAT). There are two types — either works:
 
-**Classic token (simpler):**
-1. Go to https://github.com/settings/tokens (or: Profile picture → **Settings** → **Developer settings** → **Personal access tokens** → **Tokens (classic)**)
+**Classic token (recommended — simplest, no special scopes needed):**
+
+Classic tokens work with GitHub Models **without checking any scopes at all**.
+
+1. Go to https://github.com/settings/tokens (or: Profile picture → **Settings** → scroll sidebar to bottom → **Developer settings** → **Personal access tokens** → **Tokens (classic)**)
 2. Click **"Generate new token"** → **"Generate new token (classic)"**
 3. In the **"Note"** field, enter `ai-confluence-pipeline`
 4. Set **Expiration** (90 days recommended, or "No expiration" for personal use)
-5. Under **"Select scopes"**, scroll down and check **`read:models`** (under the Models section)
+5. **Leave all scopes unchecked** — classic tokens access GitHub Models without any special permissions
 6. Click **"Generate token"** (green button at bottom)
 7. **Copy the token immediately** — you won't be able to see it again. It starts with `ghp_`
 
-**Fine-grained token (more secure, narrower scope):**
-1. Go to https://github.com/settings/tokens?type=beta (or: Profile picture → **Settings** → **Developer settings** → **Personal access tokens** → **Fine-grained tokens**)
+> **Direct link:** https://github.com/settings/tokens
+
+**Fine-grained token (alternative — stricter security):**
+
+Fine-grained tokens require an explicit Models permission:
+
+1. Go to https://github.com/settings/tokens?type=beta (or: **Settings** → **Developer settings** → **Personal access tokens** → **Fine-grained tokens**)
 2. Click **"Generate new token"**
 3. Enter a **Token name**: `ai-confluence-pipeline`
 4. Set **Expiration** (90 days recommended)
 5. Under **Permissions** → **Account permissions** → find **"Models"** → set to **"Read"**
-   - If you don't see "Models" in the list, your account may not have access yet — use a classic token instead
+   - If you don't see "Models" in the list, your account may not have this option yet — use a classic token instead
 6. Click **"Generate token"**
 7. **Copy the token immediately** — it starts with `github_pat_`
 
-> **Where is Developer settings?** Go to https://github.com/settings/profile → scroll the left sidebar all the way down → last item is **"Developer settings"**.
+> **Can't find Developer Settings?** Go to https://github.com/settings/profile → scroll the left sidebar all the way to the **bottom** → last item is **"Developer settings"**. Or go directly: https://github.com/settings/apps
 
 **Option B — Anthropic API (pay-per-use):**
 1. Go to https://console.anthropic.com/
