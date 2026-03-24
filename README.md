@@ -161,9 +161,28 @@ See [docs/CUSTOMIZATION.md](docs/CUSTOMIZATION.md) for:
 - Docker & Docker Compose
 - Confluence Cloud + API token
 - Jira Cloud + API token (optional)
-- Anthropic or OpenAI API key
+- **AI provider (choose one — see table below)**
+
+### AI Provider Options
+
+You do NOT need a paid API key. GitHub Models API is free with any GitHub account.
+
+| Provider | Cost | What You Need | Best For |
+|----------|------|---------------|----------|
+| **GitHub Models API** | **Free** (rate-limited) | GitHub account + Personal Access Token | Getting started, low volume |
+| GitHub Models + Copilot | Copilot subscription ($10-39/mo) | Higher rate limits than free tier | Regular use |
+| Anthropic API | Pay-per-use (~$3-15/MTok) | API key from console.anthropic.com | High volume, best quality |
+| OpenAI API | Pay-per-use (~$2.50-10/MTok) | API key from platform.openai.com | High volume, alternative |
+
+**Recommended starting point:** GitHub Models API (free) with `openai/gpt-4o` or `anthropic/claude-sonnet-4.6`. See [docs/GITHUB_MODELS_SETUP.md](docs/GITHUB_MODELS_SETUP.md) for setup.
 
 ## FAQ
+
+**Can I use this without paying for an API key?**
+Yes. The GitHub Models API is free for all GitHub accounts (rate-limited to ~50-150 requests/day depending on model). Just create a Personal Access Token with `models:read` scope. See [docs/GITHUB_MODELS_SETUP.md](docs/GITHUB_MODELS_SETUP.md).
+
+**Can I use my Copilot subscription instead of an API key?**
+Not directly — Copilot is an IDE tool without a general-purpose REST API. However, a Copilot subscription gives you higher rate limits on the GitHub Models API, which IS a REST API this pipeline can use. So a Copilot subscription helps indirectly.
 
 **Can I use OpenAI instead of Claude?**
 Yes. Change `AI_PROVIDER=openai` in `.env` and modify the "Call Claude API" node to use the OpenAI messages endpoint. The prompt templates work with any model.
