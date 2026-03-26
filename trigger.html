@@ -147,9 +147,15 @@
     <input type="file" id="md-file-input" accept=".md,.txt,.markdown" style="display:none;" />
 
     <div id="jira-panel" style="display:none;">
-      <div class="form-group">
-        <label>Existing Epic Key/URL <span class="label-hint">(optional — leave blank to create new)</span></label>
-        <input id="epic-key" placeholder="e.g., PROJ-123 or https://company.atlassian.net/browse/PROJ-123" />
+      <div class="row">
+        <div class="form-group">
+          <label>Existing Epic Key/URL <span class="label-hint">(optional — leave blank to create new)</span></label>
+          <input id="epic-key" placeholder="e.g., PROJ-123 or full URL" />
+        </div>
+        <div class="form-group">
+          <label>Component <span class="label-hint">(applies to all issues unless overridden in markdown)</span></label>
+          <input id="jira-component" placeholder="e.g., Backend, Frontend, Platform" />
+        </div>
       </div>
       <div class="form-group">
         <div style="display:flex; justify-content:space-between; align-items:center;">
@@ -354,6 +360,7 @@
         return;
       }
       const epicKey = document.getElementById('epic-key').value.trim();
+      const jiraComponent = document.getElementById('jira-component').value.trim();
       const taskEntries = document.querySelectorAll('#task-list .task-entry');
       const taskMarkdowns = [];
       const taskKeys = [];
@@ -373,7 +380,7 @@
         const response = await fetch('http://localhost:' + PORT + '/webhook/markdown-to-jira', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ epicMarkdown, taskMarkdowns, epicKey, taskKeys })
+          body: JSON.stringify({ epicMarkdown, taskMarkdowns, epicKey, taskKeys, component: jiraComponent })
         });
         let data = await response.json();
         if (Array.isArray(data)) data = data[0];
@@ -844,6 +851,7 @@
       document.getElementById('iterative-panel').style.display = 'none';
       document.getElementById('feedback').value = '';
       document.getElementById('epic-key').value = '';
+      document.getElementById('jira-component').value = '';
       document.getElementById('epic-markdown').value = '';
       document.querySelectorAll('.task-key').forEach(el => el.value = '');
       document.querySelectorAll('.task-markdown').forEach(ta => ta.value = '');
