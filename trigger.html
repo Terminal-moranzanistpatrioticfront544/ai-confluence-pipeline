@@ -220,34 +220,46 @@
 
     <div id="confluence-panel" style="display:none;">
 
-      <div class="panel-section panel-confluence-page">
-        <div class="panel-section-title">Page Settings</div>
-        <div class="form-group" style="margin-bottom:0.75rem;">
-          <label>Existing Page ID/URL <span class="label-hint">(leave blank to create new)</span></label>
-          <input id="confluence-page-id" placeholder="e.g., 123456789 or full Confluence page URL" />
-        </div>
+      <div class="panel-section panel-global">
+        <div class="panel-section-title">Global Settings <span class="pill pill-local">applies to all pages</span></div>
         <div class="row">
-          <div class="form-group" style="margin-bottom:0.5rem;">
-            <label>Title Override <span class="label-hint">(uses # heading if blank)</span></label>
-            <input id="confluence-title" placeholder="Leave blank to use heading from markdown" />
+          <div class="form-group" style="margin-bottom:0.75rem;">
+            <label>Parent Page ID/URL <span class="label-hint">(new pages created under this parent)</span></label>
+            <input id="confluence-parent" placeholder="e.g., 123456789 or full Confluence page URL" />
           </div>
-          <div class="form-group" style="margin-bottom:0.5rem;">
-            <label>Labels <span class="label-hint">(comma-separated)</span></label>
+          <div class="form-group" style="margin-bottom:0.75rem;">
+            <label>Labels <span class="label-hint">(comma-separated, applies to all)</span></label>
             <input id="confluence-labels" placeholder="e.g., docs, api, team-platform" />
           </div>
         </div>
       </div>
 
-      <div class="panel-section panel-confluence-page">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
-          <div class="panel-section-title" style="margin:0; padding:0; border:0;">Main Page Content</div>
-          <button class="btn-secondary" onclick="importMdFile('page-markdown')" style="padding:0.2rem 0.6rem; font-size:0.7rem;">Import .md</button>
+      <div id="confluence-page-list">
+        <div class="panel-section panel-confluence-page confluence-page-entry">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem; padding-bottom:0.5rem; border-bottom:1px solid #334155;">
+            <div class="panel-section-title" style="margin:0; padding:0; border:0;">Page 1</div>
+            <div>
+              <button class="btn-secondary" onclick="importMdToConfPage(this)" style="padding:0.2rem 0.6rem; font-size:0.7rem;">Import .md</button>
+              <button class="btn-secondary" onclick="removeConfPage(this)" style="padding:0.2rem 0.5rem; font-size:0.7rem;">Remove</button>
+            </div>
+          </div>
+          <div class="row" style="margin-bottom:0.75rem;">
+            <div style="flex:1;">
+              <span class="small-label">Existing Page ID/URL (leave blank to create new)</span>
+              <input class="conf-page-id" placeholder="e.g., 123456789 or full URL" />
+            </div>
+            <div style="flex:1;">
+              <span class="small-label">Title Override (uses # heading if blank)</span>
+              <input class="conf-page-title" placeholder="Leave blank to use heading from markdown" />
+            </div>
+          </div>
+          <div class="form-group" style="margin-bottom:0;">
+            <span class="small-label">Page Content — markdown</span>
+            <textarea class="conf-page-markdown" rows="8" placeholder="# Page Title&#10;&#10;Page content with **bold**, *italic*, `code`, tables, lists...&#10;&#10;## Section&#10;More content..."></textarea>
+          </div>
         </div>
-        <textarea id="page-markdown" rows="8" placeholder="# Page Title&#10;&#10;Introduction content...&#10;&#10;## Section Heading&#10;&#10;Section content with **bold**, *italic*, `code`, tables, lists..." style="margin-bottom:0;"></textarea>
       </div>
-
-      <div id="section-list"></div>
-      <button class="btn-secondary" onclick="addSection()" style="margin-top:0.25rem; font-size:0.8rem;">+ Add Section</button>
+      <button class="btn-secondary" onclick="addConfPage()" style="margin-top:0.25rem; font-size:0.8rem;">+ Add Page</button>
     </div>
 
     <div class="actions">
@@ -378,6 +390,49 @@
     }
 
     // --- Dynamic section entries ---
+    // --- Dynamic Confluence pages ---
+    let confPageCount = 1;
+    function addConfPage() {
+      confPageCount++;
+      const div = document.createElement('div');
+      div.className = 'panel-section panel-confluence-page confluence-page-entry';
+      div.innerHTML =
+        '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem; padding-bottom:0.5rem; border-bottom:1px solid #334155;">' +
+        '<div class="panel-section-title" style="margin:0; padding:0; border:0;">Page ' + confPageCount + '</div>' +
+        '<div><button class="btn-secondary" onclick="importMdToConfPage(this)" style="padding:0.2rem 0.6rem; font-size:0.7rem;">Import .md</button> ' +
+        '<button class="btn-secondary" onclick="removeConfPage(this)" style="padding:0.2rem 0.5rem; font-size:0.7rem;">Remove</button></div></div>' +
+        '<div class="row" style="margin-bottom:0.75rem;">' +
+        '<div style="flex:1;"><span class="small-label">Existing Page ID/URL (leave blank to create new)</span><input class="conf-page-id" placeholder="e.g., 123456789 or full URL" /></div>' +
+        '<div style="flex:1;"><span class="small-label">Title Override (uses # heading if blank)</span><input class="conf-page-title" placeholder="Leave blank to use heading from markdown" /></div></div>' +
+        '<div class="form-group" style="margin-bottom:0;"><span class="small-label">Page Content — markdown</span>' +
+        '<textarea class="conf-page-markdown" rows="8" placeholder="# Page Title\n\nPage content..."></textarea></div>';
+      document.getElementById('confluence-page-list').appendChild(div);
+    }
+
+    function removeConfPage(btn) {
+      btn.closest('.confluence-page-entry').remove();
+      document.querySelectorAll('#confluence-page-list .confluence-page-entry').forEach((el, i) => {
+        const title = el.querySelector('.panel-section-title');
+        if (title) title.textContent = 'Page ' + (i + 1);
+      });
+      confPageCount = document.querySelectorAll('#confluence-page-list .confluence-page-entry').length;
+    }
+
+    function importMdToConfPage(btn) {
+      const entry = btn.closest('.confluence-page-entry');
+      const textarea = entry.querySelector('.conf-page-markdown');
+      if (!textarea) return;
+      const fileInput = document.getElementById('md-file-input');
+      fileInput.value = '';
+      fileInput.onchange = function() {
+        if (!this.files.length) return;
+        const reader = new FileReader();
+        reader.onload = function(e) { textarea.value = e.target.result; };
+        reader.readAsText(this.files[0]);
+      };
+      fileInput.click();
+    }
+
     function addSection() {
       sectionCount++;
       const div = document.createElement('div');
@@ -480,29 +535,35 @@
 
     // --- Confluence pipeline ---
     async function runConfluencePipeline() {
-      const pageMarkdown = document.getElementById('page-markdown').value.trim();
-      if (!pageMarkdown) {
+      const entries = document.querySelectorAll('#confluence-page-list .confluence-page-entry');
+      const pages = [];
+      entries.forEach(entry => {
+        const md = entry.querySelector('.conf-page-markdown').value.trim();
+        const pageId = entry.querySelector('.conf-page-id')?.value.trim() || '';
+        const title = entry.querySelector('.conf-page-title')?.value.trim() || '';
+        if (md) pages.push({ markdown: md, pageId, title });
+      });
+
+      if (pages.length === 0) {
         document.getElementById('status').className = 'status error';
-        document.getElementById('status').textContent = 'Please enter the page markdown.';
+        document.getElementById('status').textContent = 'Please enter markdown content for at least one page.';
         return;
       }
-      const sectionMarkdowns = Array.from(document.querySelectorAll('.section-markdown'))
-        .map(ta => ta.value.trim()).filter(Boolean);
-      const title = document.getElementById('confluence-title').value.trim();
-      const labels = document.getElementById('confluence-labels').value.trim();
-      const pageId = document.getElementById('confluence-page-id').value.trim();
 
-      const isUpdate = !!pageId;
+      const labels = document.getElementById('confluence-labels').value.trim();
+      const parentPageId = document.getElementById('confluence-parent').value.trim();
+      const hasUpdates = pages.some(p => p.pageId);
+
       document.getElementById('submit').disabled = true;
       document.getElementById('status').className = 'status loading';
-      document.getElementById('status').textContent = (isUpdate ? 'Updating' : 'Publishing') + ' Confluence page...';
+      document.getElementById('status').textContent = (hasUpdates ? 'Creating/Updating' : 'Publishing') + ' ' + pages.length + ' Confluence page(s)...';
       document.getElementById('result').style.display = 'none';
 
       try {
         const response = await fetch('http://localhost:' + PORT + '/webhook/markdown-to-confluence', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ pageMarkdown, sectionMarkdowns, title, labels, pageId })
+          body: JSON.stringify({ pages, labels, parentPageId })
         });
         let data = await response.json();
         if (Array.isArray(data)) data = data[0];
@@ -510,17 +571,21 @@
 
         if (data.success) {
           document.getElementById('status').className = 'status success';
-          const pageAction = data.confluencePage.action || 'created';
-          document.getElementById('status').textContent = 'Confluence page ' + pageAction + ': ' + data.confluencePage.title;
+          const count = data.pages?.length || 1;
+          document.getElementById('status').textContent = count + ' Confluence page(s) published.';
 
-          const pageUrl = data.confluencePage.url;
-          const pageTitle = data.confluencePage.title || 'Page';
-          document.getElementById('result-links').innerHTML = '<div class="result-cards">' +
-            '<div class="result-card">' +
-            '<a href="' + pageUrl + '" target="_blank">' + pageTitle + '</a>' +
-            '<span class="card-badge ' + (pageAction === 'updated' ? 'badge-updated' : 'badge-created') + '">' + pageAction + '</span>' +
-            '<div class="card-meta">Confluence page' + (data.confluencePage.id ? ' · ID: ' + data.confluencePage.id : '') + '</div>' +
-            '</div></div>';
+          let cardsHtml = '<div class="result-cards">';
+          const pageList = data.pages || [data.confluencePage];
+          for (const pg of pageList) {
+            if (!pg) continue;
+            const action = pg.action || 'created';
+            cardsHtml += '<div class="result-card">' +
+              '<a href="' + (pg.url || '') + '" target="_blank">' + (pg.title || 'Page') + '</a>' +
+              '<span class="card-badge ' + (action === 'updated' ? 'badge-updated' : 'badge-created') + '">' + action + '</span>' +
+              '<div class="card-meta">Confluence page' + (pg.id ? ' · ID: ' + pg.id : '') + '</div></div>';
+          }
+          cardsHtml += '</div>';
+          document.getElementById('result-links').innerHTML = cardsHtml;
           document.getElementById('download-actions').style.display = 'none';
           document.getElementById('view-toggle').style.display = 'none';
           document.getElementById('result-preview').style.display = 'none';
@@ -911,10 +976,11 @@
       document.querySelectorAll('.task-key').forEach(el => el.value = '');
       document.querySelectorAll('.task-assignee').forEach(el => el.value = '');
       document.querySelectorAll('.task-markdown').forEach(ta => ta.value = '');
-      document.getElementById('confluence-page-id').value = '';
-      document.getElementById('page-markdown').value = '';
-      document.getElementById('confluence-title').value = '';
+      document.getElementById('confluence-parent').value = '';
       document.getElementById('confluence-labels').value = '';
+      document.querySelectorAll('.conf-page-id').forEach(el => el.value = '');
+      document.querySelectorAll('.conf-page-title').forEach(el => el.value = '');
+      document.querySelectorAll('.conf-page-markdown').forEach(el => el.value = '');
       document.querySelectorAll('.section-entry').forEach(el => el.remove());
       sectionCount = 0;
       lastResult = null;
