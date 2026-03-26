@@ -133,21 +133,31 @@ The prompts in `prompts/` are what the current n8n workflow uses. The templates 
 
 ## Workflows
 
-There are 5 ways to run the pipeline. Pick the one that fits your setup:
+There are 8 ways to use the pipeline. Pick the one that fits your setup:
 
-| # | Pipeline | AI Backend | Requires | Script / Workflow |
-|---|----------|-----------|----------|-------------------|
-| 1 | **gh models CLI** | GitHub Copilot (`gh models run`) | `gh` CLI + extension | `scripts/gh-models-preview.sh` |
-| 2 | **Claude Code CLI** | Claude Code (`claude -p`) | `claude` CLI | `scripts/cli-preview.sh` |
-| 3 | **n8n Preview** | GitHub Models REST API | Docker + n8n | `workflows/preview-pipeline.json` |
-| 4 | **n8n Direct Push** (free) | GitHub Models REST API | Docker + n8n | `workflows/github-models-pipeline.json` |
-| 5 | **n8n Direct Push** (paid) | Anthropic REST API | Docker + n8n + API key | `workflows/technical-analysis-pipeline.json` |
+### AI Analysis Pipelines
 
-Pipelines 1-2 are **standalone scripts** — no Docker, no n8n, no API keys. Just a CLI tool and a terminal.
-Pipelines 3-5 require **Docker + n8n** and support the browser UI (`trigger.html`).
+| # | Pipeline | AI Backend | Requires | Browser UI | Script / Workflow |
+|---|----------|-----------|----------|-----------|-------------------|
+| 1 | **gh models CLI** | GitHub Copilot (`gh models run`) | `gh` CLI + extension | No | `scripts/gh-models-preview.sh` |
+| 2 | **Claude Code CLI** | Claude Code (`claude -p`) | `claude` CLI | No | `scripts/cli-preview.sh` |
+| 3 | **n8n Preview** | GitHub Models REST API | Docker + n8n | Yes | `workflows/preview-pipeline.json` |
+| 4 | **n8n Iterative Preview** | GitHub Models REST API | Docker + n8n | Yes | `workflows/iterative-preview-pipeline.json` |
+| 5 | **n8n Direct Push** (free) | GitHub Models REST API | Docker + n8n | Yes | `workflows/github-models-pipeline.json` |
+| 6 | **n8n Direct Push** (paid) | Anthropic REST API | Docker + n8n + API key | Yes | `workflows/technical-analysis-pipeline.json` |
 
-> For full CLI setup instructions, see **[docs/CLI_SETUP.md](docs/CLI_SETUP.md)**.
-> For full n8n/Docker setup, see **[docs/SETUP.md](docs/SETUP.md)**.
+### Markdown → Jira / Confluence (no AI, publish your own files)
+
+| # | Script | What It Does | Requires |
+|---|--------|-------------|----------|
+| 7 | **folder-to-jira** | Create Jira Epic + linked Stories from markdown files | `.env` with `JIRA_*` |
+| 8 | **folder-to-confluence** | Create Confluence page from markdown files | `.env` with `CONFLUENCE_*` |
+
+Pipelines 1-2 are **standalone scripts** — no Docker, no n8n, no API keys.
+Pipelines 3-6 require **Docker + n8n** and support the browser UI (`trigger.html`).
+Scripts 7-8 publish your **own markdown files** to Jira/Confluence — no AI involved.
+
+> **Full docs:** [Workflows Reference](docs/WORKFLOWS.md) | [CLI Setup](docs/CLI_SETUP.md) | [n8n Setup](docs/SETUP.md)
 
 ---
 
@@ -223,6 +233,51 @@ Workflow: `workflows/preview-pipeline.json`
 Workflow: `workflows/github-models-pipeline.json` (free) or `workflows/technical-analysis-pipeline.json` (Anthropic, paid).
 
 There are also n8n workflow variants for both CLIs (`workflows/cli-preview-pipeline.json` and `workflows/gh-models-cli-pipeline.json`) — these use the Execute Command node and only work with native n8n (not Docker).
+
+#### Iterative Preview (auto-critique + human feedback loop)
+
+AI generates → self-critiques → refines automatically (3 passes), then you can provide feedback for further refinement. Select "Iterative Preview" in the `trigger.html` dropdown, or call the webhook directly.
+
+```bash
+# Takes 45-120 seconds (3 AI passes)
+curl -X POST http://localhost:10353/webhook/preview-iterative \
+  -H "Content-Type: application/json" \
+  -d '{"featureDescription": "Add notifications", "template": "new-feature"}'
+```
+
+Workflow: `workflows/iterative-preview-pipeline.json`. See [docs/WORKFLOWS.md](docs/WORKFLOWS.md#iterative-preview-pipeline) for full details.
+
+---
+
+### Markdown → Jira / Confluence (no AI needed)
+
+Publish your own markdown files directly to Jira or Confluence — no AI, no n8n.
+
+```bash
+# Create Jira Epic + linked Stories from markdown files
+./scripts/folder-to-jira.sh \
+  --epic my-project/epic.md \
+  --task my-project/task-api.md \
+  --task my-project/task-db.md \
+  --task my-project/task-ui.md
+
+# Create Confluence page from markdown files
+./scripts/folder-to-confluence.sh \
+  --page docs/overview.md \
+  --section docs/setup.md \
+  --section docs/api-reference.md
+
+# Preview first (no tickets/pages created)
+./scripts/folder-to-jira.sh --epic epic.md --task task-*.md --dry-run
+./scripts/folder-to-confluence.sh --page docs/overview.md --dry-run
+```
+
+```powershell
+.\scripts\folder-to-jira.ps1 -Epic epic.md -Tasks task-api.md,task-db.md
+.\scripts\folder-to-confluence.ps1 -Page docs\overview.md -Sections docs\setup.md,docs\api.md
+```
+
+See [docs/WORKFLOWS.md](docs/WORKFLOWS.md#folder-to-jira) for markdown format and all options. Example files in `examples/epic-folder/` and `examples/confluence-folder/`.
 
 ## Team Context Profiles
 
