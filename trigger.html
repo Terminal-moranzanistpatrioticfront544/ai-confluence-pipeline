@@ -75,6 +75,7 @@
           <option value="preview">Preview — save as markdown, push later</option>
           <option value="preview-cli">Preview via Claude CLI — no API keys needed</option>
           <option value="preview-gh">Preview via gh models CLI (GitHub Copilot) — no API keys needed</option>
+          <option value="preview-iterative">Iterative Preview — AI generates, critiques, you refine in a loop</option>
           <option value="analyze">Direct Push — Confluence + Jira</option>
           <option value="analyze-no-jira">Direct Push — Confluence only</option>
         </select>
@@ -147,6 +148,17 @@
         <button class="btn-secondary" id="download-json" onclick="downloadFile('json')" style="padding: 0.5rem 1rem; font-size: 0.8rem;">Download .json</button>
         <button class="btn-secondary" id="copy-md" onclick="copyMarkdown()" style="padding: 0.5rem 1rem; font-size: 0.8rem;">Copy Markdown</button>
       </div>
+      <div id="iterative-panel" style="display:none; margin-top: 1rem; padding: 1rem; background: #1e293b; border: 1px solid #334155; border-radius: 0.5rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+          <label for="feedback" style="margin: 0; font-size: 0.875rem; font-weight: 600; color: #cbd5e1;">Refinement Feedback</label>
+          <span id="iteration-badge" class="pill pill-local">Iteration 1</span>
+        </div>
+        <textarea id="feedback" rows="3" placeholder="e.g., Add more detail to the database section. The API contracts are missing pagination. Reduce the number of tasks. Add a caching layer to the architecture."></textarea>
+        <div style="display: flex; gap: 0.75rem; margin-top: 0.75rem;">
+          <button class="btn-primary" id="refine-btn" onclick="refineAnalysis()">Refine</button>
+          <button class="btn-secondary" id="approve-btn" onclick="approveAnalysis()" style="background: #14532d; border-color: #22c55e; color: #86efac;">Approve &amp; Finalize</button>
+        </div>
+      </div>
       <div id="result-preview" class="rendered-markdown"></div>
       <pre id="result-content" style="display: none;"></pre>
     </div>
@@ -159,6 +171,9 @@
   <script>
     const PORT = 10353;
     let lastResult = null;
+    let iterativeMode = false;
+    let currentIteration = 0;
+    let currentAnalysis = null;
 
     // Load custom prompts into dropdown on page load
     (function loadCustomPrompts() {
@@ -236,11 +251,14 @@
 
       document.getElementById('submit').disabled = true;
       status.className = 'status loading';
-      status.textContent = `Generating analysis using "${TEMPLATE_DESCRIPTIONS[template]?.split('—')[0]?.trim() || template}" template... this takes 15-60 seconds.`;
+      status.textContent = isIterative
+        ? `Generating analysis with auto-critique loop using "${TEMPLATE_DESCRIPTIONS[template]?.split('—')[0]?.trim() || template}" template... this takes 45-120 seconds (3 AI passes).`
+        : `Generating analysis using "${TEMPLATE_DESCRIPTIONS[template]?.split('—')[0]?.trim() || template}" template... this takes 15-60 seconds.`;
       result.style.display = 'none';
 
-      const isPreview = pipeline === 'preview' || pipeline === 'preview-cli' || pipeline === 'preview-gh';
-      const webhookPath = pipeline === 'preview-cli' ? 'preview-cli' : (pipeline === 'preview-gh' ? 'preview-gh' : (pipeline === 'preview' ? 'preview' : 'analyze'));
+      const isPreview = pipeline === 'preview' || pipeline === 'preview-cli' || pipeline === 'preview-gh' || pipeline === 'preview-iterative';
+      const isIterative = pipeline === 'preview-iterative';
+      const webhookPath = pipeline === 'preview-cli' ? 'preview-cli' : (pipeline === 'preview-gh' ? 'preview-gh' : (pipeline === 'preview-iterative' ? 'preview-iterative' : (pipeline === 'preview' ? 'preview' : 'analyze')));
 
       const body = {
         featureDescription: description,
@@ -280,7 +298,6 @@
 
           if (isPreview) {
             lastResult = data;
-            status.textContent = `Analysis generated: ${data.title}. Download the files or copy the markdown below.`;
             resultLinks.innerHTML = '';
             document.getElementById('download-actions').style.display = 'flex';
             document.getElementById('download-actions').style.gap = '0.5rem';
@@ -289,6 +306,18 @@
             resultContent.textContent = md;
             document.getElementById('result-preview').innerHTML = markdownToHtml(md);
             switchView('preview');
+
+            if (isIterative) {
+              iterativeMode = true;
+              currentAnalysis = data.analysis;
+              currentIteration = data.iteration || 1;
+              document.getElementById('iterative-panel').style.display = 'block';
+              document.getElementById('iteration-badge').textContent = `Iteration ${currentIteration}`;
+              status.textContent = `Draft generated: ${data.title} (iteration ${currentIteration}, auto-critiqued). Review below — refine with feedback or approve.`;
+            } else {
+              document.getElementById('iterative-panel').style.display = 'none';
+              status.textContent = `Analysis generated: ${data.title}. Download the files or copy the markdown below.`;
+            }
           } else {
             document.getElementById('download-actions').style.display = 'none';
             document.getElementById('view-toggle').style.display = 'none';
@@ -422,6 +451,81 @@
       });
     }
 
+    async function refineAnalysis() {
+      const feedback = document.getElementById('feedback').value.trim();
+      if (!feedback) {
+        document.getElementById('status').className = 'status error';
+        document.getElementById('status').textContent = 'Please enter feedback for the AI to refine the analysis.';
+        return;
+      }
+
+      const template = document.getElementById('template').value;
+      const status = document.getElementById('status');
+
+      document.getElementById('refine-btn').disabled = true;
+      status.className = 'status loading';
+      status.textContent = `Refining analysis based on your feedback (iteration ${currentIteration + 1})... this takes 15-60 seconds.`;
+
+      const body = {
+        action: 'refine',
+        previousAnalysis: currentAnalysis,
+        feedback: feedback,
+        template: template,
+        iteration: currentIteration
+      };
+
+      if (template.startsWith('custom:')) {
+        const customId = template.replace('custom:', '');
+        const customTemplate = CUSTOM_PROMPTS.find(t => t.id === customId);
+        if (customTemplate) {
+          body.customRole = customTemplate.role;
+          body.customSchema = customTemplate.schema;
+        }
+      }
+
+      try {
+        const response = await fetch(`http://localhost:${PORT}/webhook/preview-iterative`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        });
+        let data = await response.json();
+        if (Array.isArray(data)) data = data[0];
+        if (data?.json) data = data.json;
+
+        lastResult = data;
+        currentAnalysis = data.analysis;
+        currentIteration = data.iteration || (currentIteration + 1);
+
+        document.getElementById('iteration-badge').textContent = `Iteration ${currentIteration}`;
+        status.className = 'status success';
+        status.textContent = `Refined: ${data.title} (iteration ${currentIteration}). Review below — refine again or approve.`;
+
+        const md = data.markdown || JSON.stringify(data.analysis, null, 2);
+        document.getElementById('result-content').textContent = md;
+        document.getElementById('result-preview').innerHTML = markdownToHtml(md);
+        document.getElementById('feedback').value = '';
+        switchView('preview');
+      } catch (e) {
+        status.className = 'status error';
+        if (e.message.includes('Failed to fetch') || e.message.includes('NetworkError')) {
+          status.textContent = `Cannot reach n8n at localhost:${PORT}. Is it running?`;
+        } else {
+          status.textContent = `Error refining: ${e.message}`;
+        }
+      }
+
+      document.getElementById('refine-btn').disabled = false;
+    }
+
+    function approveAnalysis() {
+      iterativeMode = false;
+      document.getElementById('iterative-panel').style.display = 'none';
+      const status = document.getElementById('status');
+      status.className = 'status success';
+      status.textContent = `Analysis approved: ${lastResult?.title || 'Analysis'} (after ${currentIteration} iteration${currentIteration > 1 ? 's' : ''}). Download or copy below.`;
+    }
+
     function clearForm() {
       document.getElementById('description').value = '';
       document.getElementById('context').value = '';
@@ -430,7 +534,12 @@
       document.getElementById('download-actions').style.display = 'none';
       document.getElementById('view-toggle').style.display = 'none';
       document.getElementById('result-preview').innerHTML = '';
+      document.getElementById('iterative-panel').style.display = 'none';
+      document.getElementById('feedback').value = '';
       lastResult = null;
+      iterativeMode = false;
+      currentIteration = 0;
+      currentAnalysis = null;
     }
 
     document.addEventListener('keydown', (e) => {
