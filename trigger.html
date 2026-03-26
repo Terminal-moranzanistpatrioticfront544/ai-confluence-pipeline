@@ -153,8 +153,18 @@
           <input id="epic-key" placeholder="e.g., PROJ-123 or full URL" />
         </div>
         <div class="form-group">
-          <label>Component <span class="label-hint">(applies to all issues unless overridden in markdown)</span></label>
+          <label>Component <span class="label-hint">(applies to all issues)</span></label>
           <input id="jira-component" placeholder="e.g., Backend, Frontend, Platform" />
+        </div>
+      </div>
+      <div class="row">
+        <div class="form-group">
+          <label>Default Assignee <span class="label-hint">(Jira account ID or email — applies to all)</span></label>
+          <input id="jira-assignee" placeholder="e.g., 5a1234bc56789d0e12f34567 or user@company.com" />
+        </div>
+        <div class="form-group">
+          <label>Reporter / Owner <span class="label-hint">(Jira account ID or email)</span></label>
+          <input id="jira-reporter" placeholder="e.g., 5a1234bc56789d0e12f34567 or user@company.com" />
         </div>
       </div>
       <div class="form-group">
@@ -166,7 +176,10 @@
       </div>
       <div id="task-list">
         <div class="form-group task-entry">
-          <input class="task-key" placeholder="Existing task key (optional, e.g., PROJ-456)" style="margin-bottom:0.35rem;" />
+          <div class="row" style="margin-bottom:0.35rem;">
+            <input class="task-key" placeholder="Existing task key (optional, e.g., PROJ-456)" style="flex:1;" />
+            <input class="task-assignee" placeholder="Assignee (optional — overrides default)" style="flex:1;" />
+          </div>
           <div style="display:flex; justify-content:space-between; align-items:center;">
             <label style="margin:0;">Task 1 <span class="label-hint">— becomes a Story linked to the epic</span></label>
             <div>
@@ -311,7 +324,9 @@
       taskCount++;
       const div = document.createElement('div');
       div.className = 'form-group task-entry';
-      div.innerHTML = '<input class="task-key" placeholder="Existing task key (optional, e.g., PROJ-456)" style="margin-bottom:0.35rem;" />' +
+      div.innerHTML = '<div class="row" style="margin-bottom:0.35rem;">' +
+        '<input class="task-key" placeholder="Existing task key (optional, e.g., PROJ-456)" style="flex:1;" />' +
+        '<input class="task-assignee" placeholder="Assignee (optional — overrides default)" style="flex:1;" /></div>' +
         '<div style="display:flex; justify-content:space-between; align-items:center;">' +
         '<label style="margin:0;">Task ' + taskCount + ' <span class="label-hint">— becomes a Story linked to the epic</span></label>' +
         '<div><button class="btn-secondary" onclick="importMdToSibling(this)" style="padding:0.2rem 0.6rem; font-size:0.7rem;">Import .md</button> ' +
@@ -361,13 +376,17 @@
       }
       const epicKey = document.getElementById('epic-key').value.trim();
       const jiraComponent = document.getElementById('jira-component').value.trim();
+      const jiraAssignee = document.getElementById('jira-assignee').value.trim();
+      const jiraReporter = document.getElementById('jira-reporter').value.trim();
       const taskEntries = document.querySelectorAll('#task-list .task-entry');
       const taskMarkdowns = [];
       const taskKeys = [];
+      const taskAssignees = [];
       taskEntries.forEach(entry => {
         const md = entry.querySelector('.task-markdown').value.trim();
         const key = entry.querySelector('.task-key')?.value.trim() || '';
-        if (md) { taskMarkdowns.push(md); taskKeys.push(key); }
+        const assignee = entry.querySelector('.task-assignee')?.value.trim() || '';
+        if (md) { taskMarkdowns.push(md); taskKeys.push(key); taskAssignees.push(assignee); }
       });
 
       const isUpdate = !!epicKey;
@@ -380,7 +399,7 @@
         const response = await fetch('http://localhost:' + PORT + '/webhook/markdown-to-jira', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ epicMarkdown, taskMarkdowns, epicKey, taskKeys, component: jiraComponent })
+          body: JSON.stringify({ epicMarkdown, taskMarkdowns, epicKey, taskKeys, taskAssignees, component: jiraComponent, assignee: jiraAssignee, reporter: jiraReporter })
         });
         let data = await response.json();
         if (Array.isArray(data)) data = data[0];
@@ -852,8 +871,11 @@
       document.getElementById('feedback').value = '';
       document.getElementById('epic-key').value = '';
       document.getElementById('jira-component').value = '';
+      document.getElementById('jira-assignee').value = '';
+      document.getElementById('jira-reporter').value = '';
       document.getElementById('epic-markdown').value = '';
       document.querySelectorAll('.task-key').forEach(el => el.value = '');
+      document.querySelectorAll('.task-assignee').forEach(el => el.value = '');
       document.querySelectorAll('.task-markdown').forEach(ta => ta.value = '');
       document.getElementById('confluence-page-id').value = '';
       document.getElementById('page-markdown').value = '';
